@@ -1,0 +1,20 @@
+# Exemplo de uma maquina padrão:
+world X Y Z:
+  ID: "id_do_customblock"
+  action: "action aqui"
+  type: "MACHINE"
+  placer: "UUID de quem colocou"
+  facing: "NORTH"
+  energy: 10 # 0 até 100
+
+# Exemplo de uma máquina "gerador":
+world Xs Ys Zs:
+  ID: "id_do_customblock"
+  action: "action aqui"
+  type: "GENERATOR"
+  placer: "UUID de quem colocou"
+  facing: "NORTH"
+  activated: true
+  energy-per-second: 1
+  inventory:
+    SLOT: ITEM_EM_BASE64

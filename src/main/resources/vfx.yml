@@ -1,0 +1,11 @@
+duration: 5
+directional:
+  can-be-negative: true
+  v: 0,0,20
+ticks:
+  ALL:
+    movement:
+      v: 1
+  0:
+    type: LEATHER_HORSE_ARMOR
+    model: 10

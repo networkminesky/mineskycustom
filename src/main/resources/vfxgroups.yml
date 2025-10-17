@@ -1,0 +1,11 @@
+VFX_ID:
+  cancellable: true
+  only-play-one: false
+  vfx:
+    - "vfx1"
+    - "vfx2"
+  sound:
+    sound: "sound"
+    volume: 1
+    pitch: 1
+    global: true

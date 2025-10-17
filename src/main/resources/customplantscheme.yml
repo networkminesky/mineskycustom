@@ -1,0 +1,15 @@
+item:
+  name: "Cool Plant"
+  model: 69
+  type: PAPER # if not present, fallback to PAPER
+
+block:
+  attached: false
+  east: false
+  north: false
+  south: false
+  west: false
+
+plant-properties:
+  player-clientside-map-mining: true
+  sound: "block.grass"

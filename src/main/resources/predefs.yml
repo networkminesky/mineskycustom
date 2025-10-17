@@ -1,0 +1,11 @@
+LOG:
+  hardness: 100
+  sound: "block.wood"
+  tools:
+    - 'AXE'
+
+STONE:
+  hardness: 100
+  sound: "block.stone"
+  tools:
+    - 'AXE'

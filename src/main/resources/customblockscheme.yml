@@ -1,0 +1,12 @@
+item:
+  name: "Bloco legal e bonito"
+  model: 69
+  type: PAPER # if not present, fallback to PAPER
+
+block:
+  instrument: "BASS"
+  note: 20
+
+plant-properties:
+  player-clientside-map-mining: true
+  sound: "block.grass"

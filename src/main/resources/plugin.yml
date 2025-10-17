@@ -1,0 +1,19 @@
+name: MineSkyCustom
+version: 1.0.0-RELEASE
+api-version: 1.21
+main: net.mineskycustom.MineSkyCustom
+
+softdepend:
+  - "MythicMobs"
+  - "ProtocolLib"
+  - "mainframe"
+  - "WorldGuard"
+  - "Geyser-Spigot"
+
+commands:
+  cb:
+    aliases:
+      - "customblocks"
+  mscustom:
+    aliases:
+      - "mineskycustom"
