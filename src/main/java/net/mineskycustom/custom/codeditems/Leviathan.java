@@ -12,6 +12,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
+@Deprecated
 public class Leviathan extends ThrowableItem {
 
     private boolean inShockwave;

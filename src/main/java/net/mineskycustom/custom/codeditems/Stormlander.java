@@ -12,6 +12,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
 
+@Deprecated
 public class Stormlander extends ThrowableItem {
 
     private boolean inShockwave;
