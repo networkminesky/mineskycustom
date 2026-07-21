@@ -256,13 +256,6 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
             }
         }.runTaskTimer(this, 20, 6);
 
-        /*new BukkitRunnable() {
-            @Override
-            public void run() {
-                MachineHandler.generateEnergyOnAllGenerators();
-            }
-        }.runTaskTimer(this, 0, 40);*/
-
         l.info("Registrando comandos...");
         this.getCommand("cb").setExecutor(new AdminCommands());
         this.getCommand("mscustom").setExecutor(new AdminCommands());
