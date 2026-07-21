@@ -612,12 +612,10 @@ public class InteractEvents implements Listener {
                     return;
                 }
                 duplicateFixer.add(p.getUniqueId());
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        duplicateFixer.remove(p.getUniqueId());
-                    }
-                }.runTaskLater(MineSkyCustom.getInstance(), 1);
+
+                p.getScheduler().runDelayed(MineSkyCustom.getInstance(), (task) -> {
+                    duplicateFixer.remove(p.getUniqueId());
+                }, null, 1);
 
                 Block placeBl = clickedBlock.getRelative(e.getBlockFace());
 
@@ -651,12 +649,9 @@ public class InteractEvents implements Listener {
                             p.setSneaking(true);
                             clickedBlock.getWorld().playSound(clickedBlock.getLocation(),
                                     naMao.getType().createBlockData().getSoundGroup().getPlaceSound(), 1, 0.8F);
-                            new BukkitRunnable() {
-                                @Override
-                                public void run() {
-                                    p.setSneaking(false);
-                                }
-                            }.runTaskLater(MineSkyCustom.getInstance(), 2);
+                            p.getScheduler().runDelayed(MineSkyCustom.getInstance(), (task) -> {
+                                p.setSneaking(false);
+                            }, null, 2);
                         } else e.setCancelled(true);
                     }
                 }
@@ -758,9 +753,9 @@ public class InteractEvents implements Listener {
                             case START_DESTROY_BLOCK: {
                                 // Bukkit.broadcastMessage("START DESTROY");
                                 if (bd.getType() != Material.NOTE_BLOCK) {
-                                    Bukkit.getScheduler().runTask(MineSkyCustom.getInstance(), () -> {
+                                    p.getScheduler().run(MineSkyCustom.getInstance(), (task) -> {
                                         p.removePotionEffect(PotionEffectType.MINING_FATIGUE);
-                                    });
+                                    }, null);
                                     return;
                                 }
 
@@ -772,16 +767,13 @@ public class InteractEvents implements Listener {
                                     }
                                 }
 
-                                new BukkitRunnable() {
-                                    @Override
-                                    public void run() {
-                                        BlockBreakEvent ev = new BlockBreakEvent(bd, p);
-                                        Bukkit.getPluginManager().callEvent(ev);
+                                Bukkit.getGlobalRegionScheduler().run(MineSkyCustom.getInstance(), (task) -> {
+                                    BlockBreakEvent ev = new BlockBreakEvent(bd, p);
+                                    Bukkit.getPluginManager().callEvent(ev);
 
-                                        if(!ev.isCancelled())
-                                            bd.setType(Material.AIR);
-                                    }
-                                }.runTask(MineSkyCustom.getInstance());
+                                    if(!ev.isCancelled())
+                                        bd.setType(Material.AIR);
+                                });
 
                                 break;
                             }

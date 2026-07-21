@@ -1,5 +1,6 @@
 package net.mineskycustom.handler;
 
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.mineskycustom.MineSkyCustom;
 import net.mineskycustom.custom.blocks.CustomBlock;
 import net.mineskycustom.custom.machines.CoalGenerator;
@@ -18,6 +19,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Consumer;
 
 public class MachineHandler {
 
@@ -139,39 +141,35 @@ public class MachineHandler {
 
             b.getWorld().playSound(b.getLocation(), Sound.BLOCK_FIRE_AMBIENT, 0.5f, 0.8f);
 
-            new BukkitRunnable() {
+            Bukkit.getRegionScheduler().runAtFixedRate(MineSkyCustom.getInstance(), b.getLocation(), new Consumer<ScheduledTask>() {
                 Block touse = b;
                 BlockFace nextFace = energySide;
                 int n = 0;
                 @Override
-                public void run() {
+                public void accept(ScheduledTask task) {
                     touse = touse.getRelative(nextFace);
 
-                    if(touse.getType() == Material.LIGHTNING_ROD) {
+                    if (touse.getType() == Material.LIGHTNING_ROD) {
                         b.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, touse.getLocation().add(0.5, 0.5, 0.5), 4, 0.1, 0.1, 0.1, 0);
 
-                        LightningRod rod = (LightningRod)touse.getBlockData();
+                        LightningRod rod = (LightningRod) touse.getBlockData();
                         nextFace = rod.getFacing();
                         n++;
-                    }
-                    else if(touse.getType() == Material.NOTE_BLOCK) {
-
+                    } else if (touse.getType() == Material.NOTE_BLOCK) {
                         addEnergy(touse, thisGenerator.getMachine().getEnergyPerSecond());
-                        this.cancel();
+                        task.cancel();
                         return;
-                    }
-                    else {
-                        this.cancel();
+                    } else {
+                        task.cancel();
                         return;
                     }
 
-                    if(n == 15) {
-                        this.cancel();
+                    if (n == 15) {
+                        task.cancel();
                         return;
                     }
                 }
-            }.runTaskTimerAsynchronously(MineSkyCustom.getInstance(), 0, 5);
-
+            }, 1, 5);
         }
 
         saveData();

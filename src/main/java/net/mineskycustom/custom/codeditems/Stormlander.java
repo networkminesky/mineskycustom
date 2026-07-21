@@ -1,6 +1,7 @@
 package net.mineskycustom.custom.codeditems;
 
 import net.mineskycustom.MineSkyCustom;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -11,6 +12,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Deprecated
 public class Stormlander extends ThrowableItem {
@@ -89,23 +92,20 @@ public class Stormlander extends ThrowableItem {
             armorStand.getWorld().spawnParticle(Particle.SONIC_BOOM, armorStand.getLocation().clone().add(0, 1, 0), 1, 0.1, 0.1, 0.1);
 
         if(tick == ((ticksBeforeComingBack()-20))) {
-            new BukkitRunnable() {
-                int n = 0;
-                @Override
-                public void run() {
-                    if(n >= 20) {
-                        getArmorStand().setRightArmPose(getArmorStand().getRightArmPose().add(0.04, 0, 0.01));
-                    } else
-                        getArmorStand().setRightArmPose(getArmorStand().getRightArmPose().add(0.09, 0, 0.01));
+            AtomicInteger n = new AtomicInteger();
+            Bukkit.getGlobalRegionScheduler().runAtFixedRate(MineSkyCustom.getInstance(), (task) -> {
+                if(n.get() >= 20) {
+                    getArmorStand().setRightArmPose(getArmorStand().getRightArmPose().add(0.04, 0, 0.01));
+                } else
+                    getArmorStand().setRightArmPose(getArmorStand().getRightArmPose().add(0.09, 0, 0.01));
 
-                    if(n >= 33 || getBase() == null || getBase().isDead()) {
-                        this.cancel();
-                        return;
-                    }
-
-                    n++;
+                if(n.get() >= 33 || getBase() == null || getBase().isDead()) {
+                    task.cancel();
+                    return;
                 }
-            }.runTaskTimer(MineSkyCustom.getInstance(),0, 0);
+
+                n.getAndIncrement();
+            }, 1, 1);
         }
     }
 
@@ -155,80 +155,71 @@ public class Stormlander extends ThrowableItem {
         stormlander.getArmorStand().setRightArmPose(angle);
         leviathan.getArmorStand().setRightArmPose(angle);
 
-        new BukkitRunnable() {
-            int n = 0;
-            @Override
-            public void run() {
+        AtomicInteger n = new AtomicInteger();
+        leviathan.getArmorStand().getScheduler().run(MineSkyCustom.getInstance(), (task) -> {
+            if (n.get() >= 190) {
+                leviathan.onItemBack(0);
+                stormlander.onItemBack(0);
 
-                if (n >= 190) {
-                    leviathan.onItemBack(0);
-                    stormlander.onItemBack(0);
+                ThrowableItemHandler.stopAndSafelyRemoveAnItem(stormlander);
+                ThrowableItemHandler.stopAndSafelyRemoveAnItem(leviathan);
 
-                    ThrowableItemHandler.stopAndSafelyRemoveAnItem(stormlander);
-                    ThrowableItemHandler.stopAndSafelyRemoveAnItem(leviathan);
+                task.cancel();
+                return;
+            } else if (n.get() == 160) {
 
-                    this.cancel();
-                    return;
-                } else if (n == 160) {
+                stormlander.getBase().setAI(true);
+                leviathan.getBase().setAI(true);
 
-                    stormlander.getBase().setAI(true);
-                    leviathan.getBase().setAI(true);
+                stormlander.getBase().getWorld().spawnParticle(Particle.CLOUD, stormlander.getBase().getLocation(), 120, 0.2, 0.2, 0.2, 2);
 
-                    stormlander.getBase().getWorld().spawnParticle(Particle.CLOUD, stormlander.getBase().getLocation(), 120, 0.2, 0.2, 0.2, 2);
+                leviathan.getBase().getWorld().playSound(stormlander.getBase().getLocation(), "minesky.effects.alert", 1, 1.2f);
 
-                    leviathan.getBase().getWorld().playSound(stormlander.getBase().getLocation(), "minesky.effects.alert", 1, 1.2f);
+                Vector direction1 = stormlander.getArmorStand().getLocation().toVector().subtract(leviathan.getArmorStand().getLocation().toVector()).normalize();
+                Vector direction2 = leviathan.getArmorStand().getLocation().toVector().subtract(stormlander.getArmorStand().getLocation().toVector()).normalize();
 
-                    Vector direction1 = stormlander.getArmorStand().getLocation().toVector().subtract(leviathan.getArmorStand().getLocation().toVector()).normalize();
-                    Vector direction2 = leviathan.getArmorStand().getLocation().toVector().subtract(stormlander.getArmorStand().getLocation().toVector()).normalize();
+                leviathan.getBase().setVelocity(direction1.multiply((-3)).setY(1));
+                stormlander.getBase().setVelocity(direction2.multiply((-3)).setY(1));
 
-                    leviathan.getBase().setVelocity(direction1.multiply((-3)).setY(1));
-                    stormlander.getBase().setVelocity(direction2.multiply((-3)).setY(1));
+                n.getAndIncrement();
 
-                    n++;
-
-                    return;
-                }
-
-                stormlander.getBase().getWorld().spawnParticle(Particle.FLASH, stormlander.getArmorStand().getLocation(), 1, 0.2, 0.2, 0.2);
-                leviathan.getBase().getWorld().spawnParticle(Particle.FLASH, leviathan.getArmorStand().getLocation(), 1, 0.2, 0.2, 0.2);
-
-                // A cada 5 ticks:
-                if ((n % 5) == 0) {
-                    leviathan.getBase().getWorld().playSound(leviathan.getArmorStand().getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1, 0.9f);
-
-                    leviathan.getArmorStand().getWorld().spawnParticle(Particle.ENCHANT, leviathan.getArmorStand().getLocation().add(0, 1.5, 0), 150, 0, 0, 0, 7);
-
-                    stormlander.getBase().getWorld().strikeLightningEffect(stormlander.getArmorStand().getLocation());
-
-                    for (Entity en : item.getBase().getWorld().getNearbyEntities(leviathan.getArmorStand().getLocation(), 4, 4, 4)) {
-                        if (!(en instanceof LivingEntity living))
-                            continue;
-                        if (en.equals(stormlander.getBase())
-                                || en.equals(leviathan.getBase()))
-                            continue;
-                        if (en.equals(stormlander.getArmorStand())
-                                || en.equals(leviathan.getArmorStand()))
-                            continue;
-
-                        living.damage((((double) stormlander.getDamage() / 2) + ((double) leviathan.getDamage() / 2)));
-
-                        living.getWorld().strikeLightningEffect(living.getLocation());
-
-                        living.setFreezeTicks(30);
-
-                        Vector direction = stormlander.getArmorStand().getLocation().toVector().subtract(living.getLocation().toVector());
-                        living.setVelocity(direction.setY(1).multiply((-3)));
-
-                    }
-                }
-
-                n++;
+                return;
             }
-        }.runTaskTimer(MineSkyCustom.getInstance(), 0, 0);
 
-        // codigo pra quando bater no leviathan
+            stormlander.getBase().getWorld().spawnParticle(Particle.FLASH, stormlander.getArmorStand().getLocation(), 1, 0.2, 0.2, 0.2);
+            leviathan.getBase().getWorld().spawnParticle(Particle.FLASH, leviathan.getArmorStand().getLocation(), 1, 0.2, 0.2, 0.2);
 
+            // A cada 5 ticks:
+            if ((n.get() % 5) == 0) {
+                leviathan.getBase().getWorld().playSound(leviathan.getArmorStand().getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1, 0.9f);
 
+                leviathan.getArmorStand().getWorld().spawnParticle(Particle.ENCHANT, leviathan.getArmorStand().getLocation().add(0, 1.5, 0), 150, 0, 0, 0, 7);
+
+                stormlander.getBase().getWorld().strikeLightningEffect(stormlander.getArmorStand().getLocation());
+
+                for (Entity en : item.getBase().getWorld().getNearbyEntities(leviathan.getArmorStand().getLocation(), 4, 4, 4)) {
+                    if (!(en instanceof LivingEntity living))
+                        continue;
+                    if (en.equals(stormlander.getBase())
+                            || en.equals(leviathan.getBase()))
+                        continue;
+                    if (en.equals(stormlander.getArmorStand())
+                            || en.equals(leviathan.getArmorStand()))
+                        continue;
+
+                    living.damage((((double) stormlander.getDamage() / 2) + ((double) leviathan.getDamage() / 2)));
+
+                    living.getWorld().strikeLightningEffect(living.getLocation());
+
+                    living.setFreezeTicks(30);
+
+                    Vector direction = stormlander.getArmorStand().getLocation().toVector().subtract(living.getLocation().toVector());
+                    living.setVelocity(direction.setY(1).multiply((-3)));
+
+                }
+            }
+            n.getAndIncrement();
+        }, null);
     }
 
 }

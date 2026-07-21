@@ -9,12 +9,12 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ThrowableItemHandler {
 
@@ -65,99 +65,96 @@ public class ThrowableItemHandler {
 
         final float speed = item.getItemSpeed();
 
-        new BukkitRunnable() {
-            int tick = 0;
-            int tickBacking = 0;
-            @Override
-            public void run() {
-                if(p.isDead() || !p.isOnline() || tickBacking >= item.ticksToTimeOutAfterComingBack() || requestForRemoval.contains(item)) {
-                    if(p.isOnline())
-                        p.getInventory().addItem(it);
+        AtomicInteger tick = new AtomicInteger();
+        AtomicInteger tickBacking = new AtomicInteger();
+        p.getScheduler().run(MineSkyCustom.getInstance(), (task) -> {
+            if(p.isDead() || !p.isOnline() || tickBacking.get() >= item.ticksToTimeOutAfterComingBack() || requestForRemoval.contains(item)) {
+                if(p.isOnline())
+                    p.getInventory().addItem(it);
 
-                    this.cancel();
-                    itemDestroy(item);
+                task.cancel();
+                itemDestroy(item);
 
-                    item.getArmorStand().remove();
-                    item.getBase().remove();
+                item.getArmorStand().remove();
+                item.getBase().remove();
 
-                    return;
-                }
-
-                ArmorStand as = item.getArmorStand();
-                Sheep base = item.getBase();
-
-                if(!item.isTicking()) {
-                    return;
-                }
-
-                if(tick == tickBeforeComingBack) {
-                    item.onItemBack(tick);
-                    item.clearHitEntities();
-                }
-
-                if(tick >= item.ticksBeforeComingBack()) {
-                    Location playerLoc = p.getLocation();
-                    Location armorLoc = base.getLocation();
-
-                    base.setVelocity(playerLoc.subtract(armorLoc).toVector().multiply(0.25));
-
-                    tickBacking++;
-                } else {
-                    Location playerLoc = p.getLocation().clone();
-                    playerLoc.setPitch((playerLoc.getPitch() > 0 ? playerLoc.getPitch()*0.8f : playerLoc.getPitch()*1.1f));
-
-                    base.setVelocity(playerLoc.getDirection().multiply(speed));
-                }
-
-                item.tick(tick, tick >= tickBeforeComingBack);
-
-                Location l = item.getArmorStand().getLocation().clone().add(0, item.getYOffset(), 0);
-
-                for(Entity en : item.getBase().getWorld().getNearbyEntities(l, 0.7, 0.7, 0.7)) {
-                    if (en instanceof LivingEntity living) {
-                        if (en.equals(item.getBase()) || en.equals(item.getArmorStand()))
-                            continue;
-                        if(item.getAlreadyHitEntities().contains(en))
-                            continue;
-
-                        // sistema de item com item
-                        if (bases.containsKey(en.getUniqueId())) {
-                            item.onHitAnotherItem(bases.get(en.getUniqueId()));
-                        } else if(armorstandBases.containsKey(en.getUniqueId())) {
-                            UUID u = armorstandBases.get(en.getUniqueId());
-                            if(bases.containsKey(u))
-                                item.onHitAnotherItem(bases.get(u));
-                        }
-
-                        if (en.equals(item.getThrower())) {
-                            // coming back?
-                            if (tick >= item.ticksBeforeComingBack()) {
-                                if (p.isOnline())
-                                    p.getInventory().addItem(it);
-
-                                this.cancel();
-                                itemDestroy(item);
-
-                                item.getArmorStand().remove();
-                                item.getBase().remove();
-
-                                return;
-                            } else continue;
-                        }
-
-                        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(item.getThrower(), en, EntityDamageEvent.DamageCause.ENTITY_ATTACK, item.getDamage());
-                        Bukkit.getPluginManager().callEvent(event);
-                        if (event.isCancelled())
-                            continue;
-
-                        item.hitEntity(living);
-                        item.registerHitEntity(en);
-                    }
-                }
-
-                tick++;
+                return;
             }
-        }.runTaskTimer(MineSkyCustom.getInstance(), 0, 0);
+
+            ArmorStand as = item.getArmorStand();
+            Sheep base = item.getBase();
+
+            if(!item.isTicking()) {
+                return;
+            }
+
+            if(tick.get() == tickBeforeComingBack) {
+                item.onItemBack(tick.get());
+                item.clearHitEntities();
+            }
+
+            if(tick.get() >= item.ticksBeforeComingBack()) {
+                Location playerLoc = p.getLocation();
+                Location armorLoc = base.getLocation();
+
+                base.setVelocity(playerLoc.subtract(armorLoc).toVector().multiply(0.25));
+
+                tickBacking.getAndIncrement();
+            } else {
+                Location playerLoc = p.getLocation().clone();
+                playerLoc.setPitch((playerLoc.getPitch() > 0 ? playerLoc.getPitch()*0.8f : playerLoc.getPitch()*1.1f));
+
+                base.setVelocity(playerLoc.getDirection().multiply(speed));
+            }
+
+            item.tick(tick.get(), tick.get() >= tickBeforeComingBack);
+
+            Location l = item.getArmorStand().getLocation().clone().add(0, item.getYOffset(), 0);
+
+            for(Entity en : item.getBase().getWorld().getNearbyEntities(l, 0.7, 0.7, 0.7)) {
+                if (en instanceof LivingEntity living) {
+                    if (en.equals(item.getBase()) || en.equals(item.getArmorStand()))
+                        continue;
+                    if(item.getAlreadyHitEntities().contains(en))
+                        continue;
+
+                    // sistema de item com item
+                    if (bases.containsKey(en.getUniqueId())) {
+                        item.onHitAnotherItem(bases.get(en.getUniqueId()));
+                    } else if(armorstandBases.containsKey(en.getUniqueId())) {
+                        UUID u = armorstandBases.get(en.getUniqueId());
+                        if(bases.containsKey(u))
+                            item.onHitAnotherItem(bases.get(u));
+                    }
+
+                    if (en.equals(item.getThrower())) {
+                        // coming back?
+                        if (tick.get() >= item.ticksBeforeComingBack()) {
+                            if (p.isOnline())
+                                p.getInventory().addItem(it);
+
+                            task.cancel();
+                            itemDestroy(item);
+
+                            item.getArmorStand().remove();
+                            item.getBase().remove();
+
+                            return;
+                        } else continue;
+                    }
+
+                    EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(item.getThrower(), en, EntityDamageEvent.DamageCause.ENTITY_ATTACK, item.getDamage());
+                    Bukkit.getPluginManager().callEvent(event);
+                    if (event.isCancelled())
+                        continue;
+
+                    item.hitEntity(living);
+                    item.registerHitEntity(en);
+                }
+            }
+
+            tick.getAndIncrement();
+        }, null);
     }
 
     private static ThrowableItem createItemInstance(Class<? extends ThrowableItem> itemClass, Player thrower) {

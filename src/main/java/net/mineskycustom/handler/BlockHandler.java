@@ -2,6 +2,7 @@ package net.mineskycustom.handler;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
 import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket;
@@ -46,7 +47,7 @@ public class BlockHandler {
     }
 
     public static ArrayList<UUID> hasblocksregistered = new ArrayList<>();
-    public static HashMap<Block, BukkitTask> BLOCKS = new HashMap<>();
+    public static HashMap<Block, ScheduledTask> BLOCKS = new HashMap<>();
 
     public static void placeCustomBlock(Player placer, CustomBlock cb, Block origin, Block placehere, ItemStack it, EquipmentSlot eq) {
 
@@ -277,29 +278,28 @@ public class BlockHandler {
 
         BlockPos bp = new BlockPos(origin.getX(), origin.getY(), origin.getZ());
 
-        BukkitTask b = new BukkitRunnable() {
+        ScheduledTask b = p.getScheduler().runAtFixedRate(MineSkyCustom.getInstance(), new java.util.function.Consumer<>() {
             int n = 0;
             int soundN = 0;
             int breaktime = 0;
-            Location l = p.getLocation();
-            @Override
-            public void run() {
+            final Location l = p.getLocation();
 
-                float f = ((float)n / (float)result.getHardness()) * (float)1;
+            @Override
+            public void accept(io.papermc.paper.threadedregions.scheduler.ScheduledTask task) {
+
+                float f = ((float) n / (float) result.getHardness()) * (float) 1;
 
                 int stage = (int) (f * 10.0f);
 
-                // Bukkit.broadcastMessage(stage+" | "+f);
-
-                if(soundN == 4)
+                if (soundN == 4)
                     soundN = 0;
 
-                if(soundN == 0) {
-                    p.playSound(l, cb.getProperties().getSound()+".hit", 0.4f, 0);
+                if (soundN == 0) {
+                    p.playSound(l, cb.getProperties().getSound() + ".hit", 0.4f, 0);
                 }
 
-                if(stage != breaktime) {
-                    if(breaktime <= 9) {
+                if (stage != breaktime) {
+                    if (breaktime <= 9) {
                         ClientboundBlockDestructionPacket packet = new ClientboundBlockDestructionPacket(0, bp, breaktime);
                         for (Player bs : Bukkit.getOnlinePlayers()) {
                             ((CraftPlayer) bs).getHandle().connection.send(packet);
@@ -308,27 +308,24 @@ public class BlockHandler {
                     breaktime++;
                 }
 
-                // Bukkit.broadcastMessage(breaktime+"");
-
-                if(breaktime == 12 || result.getHardness() <= 0/* || n == hardness*/ ) {
+                if (breaktime == 12 || result.getHardness() <= 0) {
                     breakCustomBlock(p, origin, cb, result.isUsingRightTool());
 
-                    this.cancel();
+                    task.cancel();
                     return;
-
                 }
 
                 RayTraceResult r = p.rayTraceBlocks(5, FluidCollisionMode.NEVER);
-                if(r != null && r.getHitBlock() != null && !r.getHitBlock().getLocation().equals(origin.getLocation())) {
+                if (r != null && r.getHitBlock() != null && !r.getHitBlock().getLocation().equals(origin.getLocation())) {
                     cancelBreaking(p, origin);
-                    this.cancel();
+                    task.cancel();
                     return;
                 }
 
                 n++;
                 soundN++;
             }
-        }.runTaskTimer(MineSkyCustom.getInstance(), 0, 0);
+        }, () -> {}, 1, 1);
 
         BLOCKS.put(origin, b);
     }

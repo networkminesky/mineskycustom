@@ -126,22 +126,15 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
             }
         }
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-
-                for(Player p : Bukkit.getOnlinePlayers()) {
-
-                    if(p.isBlocking()) {
-                        blockingTicks.put(p, blockingTicks.getOrDefault(p, 0)+1);
-                    } else {
-                        blockingTicks.remove(p);
-                    }
-
+        Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, (task) -> {
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (p.isBlocking()) {
+                    blockingTicks.put(p, blockingTicks.getOrDefault(p, 0) + 1);
+                } else {
+                    blockingTicks.remove(p);
                 }
-
             }
-        }.runTaskTimer(this, 20, 0);
+        },20, 1);
 
         this.getServer().getMessenger().registerIncomingPluginChannel(this, "mineskymod:main", new MMODCreativeTab());
 
@@ -217,44 +210,31 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
 
         InteractEvents.registerDigEvent();
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                for(Player p : Bukkit.getOnlinePlayers()) {
-                    if(p.hasPotionEffect(PotionEffectType.MINING_FATIGUE)) continue;
+        Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, (task) -> {
+            for(Player p : Bukkit.getOnlinePlayers()) {
+                if(p.isDead()) continue;
+                if(p.hasPotionEffect(PotionEffectType.MINING_FATIGUE)) continue;
+                try {
+                    Block z = p.getTargetBlock(null, 5);
+                    if (z.getType() == Material.NOTE_BLOCK) {
+                        p.addPotionEffect(slowDiggingPotionEffect);
+                    }
+                } catch(Exception ignored) {}
 
-                    try {
-                        Block z = p.getTargetBlock((Set<Material>) null, 5);
-                        if (z.getType() == Material.NOTE_BLOCK) {
-                            p.addPotionEffect(slowDiggingPotionEffect);
-                        }
-                    } catch(Exception ignored) {}
-                }
-            }
-        }.runTaskTimer(this, 10, 2);
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                for(Player p : Bukkit.getOnlinePlayers()) {
-                    if(p.isDead() || !p.isOnGround())
-                        continue;
-
-                    Block b = p.getLocation().getBlock().getRelative(BlockFace.DOWN);
-                    if(b.getType() == Material.NOTE_BLOCK) {
-                        if(b.getBlockData() instanceof NoteBlock nb) {
-                            if(nb.getInstrument() == Instrument.BANJO) {
-                                int note = nb.getNote().getId();
-                                if (note == 8)
-                                    p.addPotionEffect(jumpPadEffect);
-                                if (note == 9)
-                                    p.addPotionEffect(upgradedJumpPadEffect);
-                            }
+                Block b = p.getLocation().getBlock().getRelative(BlockFace.DOWN);
+                if(b.getType() == Material.NOTE_BLOCK) {
+                    if(b.getBlockData() instanceof NoteBlock nb) {
+                        if(nb.getInstrument() == Instrument.BANJO) {
+                            int note = nb.getNote().getId();
+                            if (note == 8)
+                                p.addPotionEffect(jumpPadEffect);
+                            if (note == 9)
+                                p.addPotionEffect(upgradedJumpPadEffect);
                         }
                     }
                 }
             }
-        }.runTaskTimer(this, 20, 6);
+        }, 10, 2);
 
         l.info("Registrando comandos...");
         this.getCommand("cb").setExecutor(new AdminCommands());
