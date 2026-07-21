@@ -739,47 +739,52 @@ public class InteractEvents implements Listener {
                     public void onPacketReceiving(PacketEvent e) {
                         BlockPosition l = e.getPacket().getBlockPositionModifier().read(0);
                         Player p = e.getPlayer();
-                        Block bd = new Location(p.getWorld(), l.getX(), l.getY(), l.getZ()).getBlock();
-                        if(bd.isEmpty() || !p.isOnline() || p.getGameMode() != GameMode.SURVIVAL)
-                            return;
-                        EnumWrappers.PlayerDigType type = e.getPacket().getPlayerDigTypes().read(0);
-                        BlockPos bp = new BlockPos(bd.getX(), bd.getY(), bd.getZ());
-                        switch (type) {
-                            case STOP_DESTROY_BLOCK:
-                            case ABORT_DESTROY_BLOCK: {
-                                BlockHandler.cancelBreaking(p, bd);
-                                break;
-                            }
-                            case START_DESTROY_BLOCK: {
-                                // Bukkit.broadcastMessage("START DESTROY");
-                                if (bd.getType() != Material.NOTE_BLOCK) {
-                                    p.getScheduler().run(MineSkyCustom.getInstance(), (task) -> {
-                                        p.removePotionEffect(PotionEffectType.MINING_FATIGUE);
-                                    }, null);
-                                    return;
-                                }
 
-                                for (CustomBlock rb : MineSkyCustom.REGISTERED_BLOCKS) {
-                                    // Bukkit.broadcastMessage("lol: "+rb.getId() + " | "+rb.getNote() + " | "+rb.getInstrument()+  " | "+rb.getConfig().getString("block.instrument"));
-                                    if (rb.isSame(bd)) {
-                                        BlockHandler.playerTryingToBreak(p, bd, rb);
+                        final Location bdL = new Location(p.getWorld(), l.getX(), l.getY(), l.getZ());
+                        Bukkit.getRegionScheduler().run(MineSkyCustom.getInstance(), bdL, (task) -> {
+                            Block bd = bdL.getBlock();
+                            if(bd.isEmpty() || !p.isOnline() || p.getGameMode() != GameMode.SURVIVAL)
+                                return;
+                            EnumWrappers.PlayerDigType type = e.getPacket().getPlayerDigTypes().read(0);
+                            BlockPos bp = new BlockPos(bd.getX(), bd.getY(), bd.getZ());
+
+                            switch (type) {
+                                case STOP_DESTROY_BLOCK:
+                                case ABORT_DESTROY_BLOCK: {
+                                    BlockHandler.cancelBreaking(p, bd);
+                                    break;
+                                }
+                                case START_DESTROY_BLOCK: {
+                                    // Bukkit.broadcastMessage("START DESTROY");
+                                    if (bd.getType() != Material.NOTE_BLOCK) {
+                                        p.getScheduler().run(MineSkyCustom.getInstance(), (playerTask) -> {
+                                            p.removePotionEffect(PotionEffectType.MINING_FATIGUE);
+                                        }, null);
                                         return;
                                     }
+
+                                    for (CustomBlock rb : MineSkyCustom.REGISTERED_BLOCKS) {
+                                        // Bukkit.broadcastMessage("lol: "+rb.getId() + " | "+rb.getNote() + " | "+rb.getInstrument()+  " | "+rb.getConfig().getString("block.instrument"));
+                                        if (rb.isSame(bd)) {
+                                            BlockHandler.playerTryingToBreak(p, bd, rb);
+                                            return;
+                                        }
+                                    }
+
+                                    Bukkit.getGlobalRegionScheduler().run(MineSkyCustom.getInstance(), (eventTask) -> {
+                                        BlockBreakEvent ev = new BlockBreakEvent(bd, p);
+                                        Bukkit.getPluginManager().callEvent(ev);
+
+                                        if(!ev.isCancelled())
+                                            bd.setType(Material.AIR);
+                                    });
+
+                                    break;
                                 }
-
-                                Bukkit.getGlobalRegionScheduler().run(MineSkyCustom.getInstance(), (task) -> {
-                                    BlockBreakEvent ev = new BlockBreakEvent(bd, p);
-                                    Bukkit.getPluginManager().callEvent(ev);
-
-                                    if(!ev.isCancelled())
-                                        bd.setType(Material.AIR);
-                                });
-
-                                break;
+                                default:
+                                    break;
                             }
-                            default:
-                                break;
-                        }
+                        });
                     }
                 });
     }
