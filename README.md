@@ -4,4 +4,4 @@ Main and essential plugin for creating and handling custom minecraft blocks and 
 ---
 
 ## Environment
-This plugin was originally created to run on a PaperMC server (or any other fork), running Minecraft version 1.21.5.
+This plugin was originally created to run on a Folia server (or any other fork), running Minecraft version 26.1.2
