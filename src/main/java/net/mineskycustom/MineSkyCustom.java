@@ -214,25 +214,30 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
             for(Player p : Bukkit.getOnlinePlayers()) {
                 if(p.isDead()) continue;
                 if(p.hasPotionEffect(PotionEffectType.MINING_FATIGUE)) continue;
-                try {
-                    Block z = p.getTargetBlock(null, 5);
-                    if (z.getType() == Material.NOTE_BLOCK) {
-                        p.addPotionEffect(slowDiggingPotionEffect);
-                    }
-                } catch(Exception ignored) {}
 
-                Block b = p.getLocation().getBlock().getRelative(BlockFace.DOWN);
-                if(b.getType() == Material.NOTE_BLOCK) {
-                    if(b.getBlockData() instanceof NoteBlock nb) {
-                        if(nb.getInstrument() == Instrument.BANJO) {
-                            int note = nb.getNote().getId();
-                            if (note == 8)
-                                p.addPotionEffect(jumpPadEffect);
-                            if (note == 9)
-                                p.addPotionEffect(upgradedJumpPadEffect);
+                p.getScheduler().run(MineSkyCustom.getInstance(), (playerTask) -> {
+                    if(!p.hasPotionEffect(PotionEffectType.MINING_FATIGUE)) {
+                        try {
+                            Block z = p.getTargetBlock(null, 5);
+                            if (z.getType() == Material.NOTE_BLOCK) {
+                                p.addPotionEffect(slowDiggingPotionEffect);
+                            }
+                        } catch(Exception ignored) {}
+                    }
+
+                    Block b = p.getLocation().getBlock().getRelative(BlockFace.DOWN);
+                    if(b.getType() == Material.NOTE_BLOCK) {
+                        if(b.getBlockData() instanceof NoteBlock nb) {
+                            if(nb.getInstrument() == Instrument.BANJO) {
+                                int note = nb.getNote().getId();
+                                if (note == 8)
+                                    p.addPotionEffect(jumpPadEffect);
+                                if (note == 9)
+                                    p.addPotionEffect(upgradedJumpPadEffect);
+                            }
                         }
                     }
-                }
+                }, null);
             }
         }, 10, 2);
 
