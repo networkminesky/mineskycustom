@@ -27,10 +27,9 @@ public class MineSkyItem {
 
         im.getPersistentDataContainer().set(NAMESPACED_KEY, PersistentDataType.STRING, translateReq);
 
-        im.displayName(Component.translatable(translateReq)
-                .decoration(TextDecoration.ITALIC, false)
-                .color(NamedTextColor.WHITE)
-        );
+        im.itemName(Component.translatable(translateReq));
+
+        spigot.setItemMeta(im);
 
         this.translate = translateReq;
         this.spigotItem = spigot;

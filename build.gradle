@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.19"
+    id 'io.papermc.paperweight.userdev' version '2.0.0-beta.21'
 }
 
 group = 'me.drawn'
@@ -8,10 +8,8 @@ version = '1.0.0'
 
 repositories {
     mavenCentral()
-    maven {
-        name = "papermc-repo"
-        url = "https://repo.papermc.io/repository/maven-public/"
-    }
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+
     maven { url "https://repo.dmulloy2.net/repository/public/" }
     maven { url "https://maven.enginehub.org/repo/" }
     maven {
@@ -20,14 +18,16 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.21.5-R0.1-SNAPSHOT")
+    paperweight.foliaDevBundle('26.1.2.build.+')
 
-    compileOnly group: "com.comphenix.protocol", name: "ProtocolLib", version: "5.3.0"
+    compileOnly 'net.dmulloy2:ProtocolLib:5.4.0'
+
     compileOnly('org.geysermc.geyser:api:2.8.3-SNAPSHOT')
-    compileOnly 'com.sk89q.worldguard:worldguard-bukkit:7.1.0-SNAPSHOT'
+
+    compileOnly 'com.sk89q.worldguard:worldguard-bukkit:7.0.18-SNAPSHOT'
 }
 
-def targetJavaVersion = 21
+def targetJavaVersion = 25
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion

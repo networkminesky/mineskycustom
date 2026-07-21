@@ -157,16 +157,25 @@ public class InteractEvents implements Listener {
         if(e.isCancelled())
             return;
 
-        if(b.getType() == Material.NOTE_BLOCK && e.isDropItems()
-        && p.getGameMode() != GameMode.CREATIVE) {
+        if(b.getType() == Material.NOTE_BLOCK
+                && e.isDropItems()
+                && p.getGameMode() != GameMode.CREATIVE) {
             e.setCancelled(true);
             return;
         }
 
         if(b.getType() == Material.TRIPWIRE) {
             e.setDropItems(false);
-            e.setCancelled(true);
-            b.setType(Material.AIR, false);
+
+            for (CustomPlant rb : MineSkyCustom.REGISTERED_PLANTS) {
+                if (rb.isSame(b)) {
+                    BlockHandler.breakCustomPlant(e.getPlayer(), b, rb);
+                    return;
+                }
+            }
+
+            //e.setCancelled(true);
+            //b.setType(Material.AIR, false);
             //Bukkit.broadcastMessage("cancelou");
         }
     }
@@ -473,7 +482,7 @@ public class InteractEvents implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onInteract(PlayerInteractEvent e) {
 
         // VFX GROUP PLAYER
@@ -566,13 +575,21 @@ public class InteractEvents implements Listener {
         if(e.getHand() != EquipmentSlot.HAND) return;
 
         // Quebrando plantas
-        if(action == Action.LEFT_CLICK_BLOCK) {
+        /*if(action == Action.LEFT_CLICK_BLOCK) {
             if(!clickedBlock.getType().equals(Material.TRIPWIRE)) return;
 
             for (CustomPlant rb : MineSkyCustom.REGISTERED_PLANTS) {
                 if (rb.isSame(clickedBlock)) {
-                    //Bukkit.broadcastMessage("break custom plant");
                     e.setCancelled(true);
+
+                    BlockBreakEvent blockBreakEvent = new BlockBreakEvent(clickedBlock, e.getPlayer());
+                    Bukkit.getPluginManager().callEvent(blockBreakEvent);
+
+                    if(blockBreakEvent.isCancelled()) {
+                        return;
+                    }
+
+                    //Bukkit.broadcastMessage("break custom plant");
                     BlockHandler.breakCustomPlant(e.getPlayer(), clickedBlock, rb);
                     return;
                 }
@@ -581,7 +598,7 @@ public class InteractEvents implements Listener {
             // movido para o blockbreakevent
 
             return;
-        }
+        }*/
         // Colocando blocos / Colocando plantas
         if(action == Action.RIGHT_CLICK_BLOCK) {
             if(e.hasItem()) {
