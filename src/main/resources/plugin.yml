@@ -1,7 +1,10 @@
 name: MineSkyCustom
 version: 1.0.0-RELEASE
-api-version: 1.21
 main: net.mineskycustom.MineSkyCustom
+
+api-version: 26.1
+
+folia-supported: true
 
 softdepend:
   - "MythicMobs"
