@@ -250,12 +250,12 @@ public class InteractEvents implements Listener {
             if(b.getBlockData() instanceof NoteBlock nb) {
                 if(nb.getInstrument() == Instrument.BANJO) {
                     int note = nb.getNote().getId();
-                    final float calculated = (e.getEntity().getFallDistance()/3f);
+                    final float calculated = (e.getEntity().getFallDistance());
                     if (note == 8 || note == 9) {
                         e.setCancelled(true);
                         e.getEntity().setFallDistance(calculated);
                         b.getWorld().playSound(b.getLocation(), "block.slime_block.fall", 1, 0f);
-                        e.getEntity().setVelocity(new Vector(0, (calculated/6f), 0));
+                        e.getEntity().setVelocity(new Vector(0, (calculated/10f), 0));
                     }
                 }
             }
@@ -318,7 +318,7 @@ public class InteractEvents implements Listener {
 
                 damaged.getWorld().spawnParticle(Particle.FLASH, damaged.getLocation().add(0, 1, 0), 1);
 
-                damaged.setCooldown(Material.SHIELD, 40);
+                damaged.setCooldown(Material.SHIELD, 20);
 
                 e.setCancelled(true);
             }

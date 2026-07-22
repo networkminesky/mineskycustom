@@ -11,6 +11,9 @@ import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.flags.registry.FlagConflictException;
 import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 import net.mineskycustom.commands.AdminCommands;
+import net.mineskycustom.custom.codeditems.Leviathan;
+import net.mineskycustom.custom.codeditems.Stormlander;
+import net.mineskycustom.custom.codeditems.ThrowableItemRegistry;
 import net.mineskycustom.gui.CustomGUI;
 import net.mineskycustom.custom.blocks.CustomBlock;
 import net.mineskycustom.custom.plants.CustomPlant;
@@ -213,7 +216,6 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
         Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, (task) -> {
             for(Player p : Bukkit.getOnlinePlayers()) {
                 if(p.isDead()) continue;
-                if(p.hasPotionEffect(PotionEffectType.MINING_FATIGUE)) continue;
 
                 p.getScheduler().run(MineSkyCustom.getInstance(), (playerTask) -> {
                     if(!p.hasPotionEffect(PotionEffectType.MINING_FATIGUE)) {
@@ -261,8 +263,8 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
             //GeyserHook.registerBlocks();
         }
         // Desativado temporariamente
-        //ThrowableItemRegistry.registerItem(84, Stormlander.class);
-        //ThrowableItemRegistry.registerItem(80, Leviathan.class);
+        ThrowableItemRegistry.registerItem(84, Stormlander.class);
+        ThrowableItemRegistry.registerItem(80, Leviathan.class);
 
         //ThrowableItem stormlander2 = ThrowableItemRegistry.createItem("Stormlander2", player);
     }
@@ -276,7 +278,6 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
             StateFlag flag = new StateFlag("parry", true);
             registry.register(flag);
             PARRY_FLAG = flag; // only set our field if there was no error
-
         } catch (FlagConflictException e) {
             Flag<?> existing = registry.get("parry");
             if (existing instanceof StateFlag) {
