@@ -13,6 +13,7 @@ import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
+import io.papermc.paper.event.player.PlayerPickBlockEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.mineskycustom.MineSkyCustom;
@@ -44,6 +45,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -353,6 +355,50 @@ public class InteractEvents implements Listener {
     }
 
     @EventHandler
+    public void onPick(PlayerPickBlockEvent e) {
+        final Player p = e.getPlayer();
+        final Block b = e.getBlock();
+
+        ItemStack spigotItem = null;
+
+        if(b.getType() == Material.NOTE_BLOCK) {
+            for(CustomBlock cb : MineSkyCustom.REGISTERED_BLOCKS) {
+                if(cb.isSame(b))
+                    spigotItem = cb.getItem().createMineSkyItem().toSpigotItem();
+            }
+        } else {
+            // Tripwire
+            for(CustomPlant cp : MineSkyCustom.REGISTERED_PLANTS) {
+                if(cp.isSame(b))
+                    spigotItem = cp.getItem().createMineSkyItem().toSpigotItem();
+            }
+        }
+
+        if(spigotItem != null) {
+            e.setCancelled(true);
+            final PlayerInventory inventory = p.getInventory();
+
+            if(inventory.containsAtLeast(spigotItem, 1)) {
+                for(int i = 0; i < 9; i++) {
+                    final ItemStack itemStack = inventory.getItem(i);
+                    if(itemStack != null && itemStack.isSimilar(spigotItem)) {
+                        p.getInventory().setHeldItemSlot(i);
+                        return;
+                    }
+                }
+            }
+
+            if(p.getGameMode() != GameMode.CREATIVE)
+                return;
+
+            p.getInventory().setHeldItemSlot(e.getTargetSlot());
+            p.getInventory().setItem(e.getTargetSlot(), spigotItem);
+            return;
+        }
+    }
+
+    /* REMOVE LEGACY
+    @EventHandler
     public void onItem(InventoryCreativeEvent e) {
         Player p = (Player)e.getWhoClicked();
         ItemStack cursor = e.getCursor();
@@ -360,7 +406,6 @@ public class InteractEvents implements Listener {
         if(e.getAction()
         == InventoryAction.PLACE_ALL
         && e.getClick() == ClickType.CREATIVE
-        //&& (e.getCurrentItem() == null || e.getCurrentItem().getType().isAir())
         && p.getOpenInventory().getType() == InventoryType.CREATIVE
         && BlockHandler.canBlockBeCustom(cursor.getType())) {
             RayTraceResult result = p.rayTraceBlocks(4.9);
@@ -409,26 +454,10 @@ public class InteractEvents implements Listener {
 
                                 p.getInventory().setItem(slot, null);
 
-                                //int sloter = p.getInventory().getHeldItemSlot();
-
                                 p.getInventory().setItemInMainHand(spigotItem);
 
-                            } else {
-
-                                /*Bukkit.broadcastMessage("p");
-                                Bukkit.broadcastMessage(e.getCurrentItem().getType()+"");
-                                Bukkit.broadcastMessage(p.getInventory().getItemInMainHand().getType()+"");*/
-
-                                //final ItemStack naMao = p.getInventory().getItemInMainHand();
-
-                                //p.getInventory().setItem(slot, naMao);
-
-                                //p.getInventory().setItemInMainHand(cbSpigotItem);
-
-                            }
-
+                            } else {}
                             return;
-
                         }
                     }
                 }
@@ -438,42 +467,24 @@ public class InteractEvents implements Listener {
                 if(p.getInventory().getItemInMainHand().getType().isAir()) {
                     p.getInventory().setItemInMainHand(spigotItem);
                 } else {
-
-                    // não tem espaço lol
                     if(p.getInventory().firstEmpty() == -1) {
-
                         p.getInventory().setItemInMainHand(spigotItem);
-
                     } else {
-
-                        //ItemStack item = p.getInventory().getItemInMainHand();
-                        //p.getInventory().addItem(item);
-
-                        //Bukkit.broadcastMessage(e.getSlot()+" | "+p.getInventory().firstEmpty());
-
                         if(p.getInventory().firstEmpty() <= 8) {
                             p.getInventory().addItem(spigotItem);
                             p.getInventory().setHeldItemSlot(e.getSlot());
                         } else {
-
-                            //Bukkit.broadcastMessage(e.getCurrentItem().getType() + " | "+e.getCursor().getType() + " | "+p.getInventory().getItem(e.getSlot()).getType());
-
                             final ItemStack actualItem = e.getCurrentItem();
-
                             p.getInventory().addItem(actualItem);
                             p.getInventory().setItemInMainHand(spigotItem);
-
                         }
                     }
 
                     p.getInventory().setItemInMainHand(spigotItem);
                 }
-
-                //Bukkit.broadcastMessage("4");
-
             }
         }
-    }
+    }*/
 
     @EventHandler
     public void onBreak(BlockExplodeEvent e) {
