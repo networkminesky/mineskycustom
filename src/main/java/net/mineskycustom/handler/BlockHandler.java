@@ -35,10 +35,7 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class BlockHandler {
 
@@ -49,8 +46,9 @@ public class BlockHandler {
     public static ArrayList<UUID> hasblocksregistered = new ArrayList<>();
     public static HashMap<Block, ScheduledTask> BLOCKS = new HashMap<>();
 
-    public static void placeCustomBlock(Player placer, CustomBlock cb, Block origin, Block placehere, ItemStack it, EquipmentSlot eq) {
+    public static Set<UUID> breakingWood = new HashSet<>();
 
+    public static void placeCustomBlock(Player placer, CustomBlock cb, Block origin, Block placehere, ItemStack it, EquipmentSlot eq) {
         BlockPlaceEvent ev = new BlockPlaceEvent(placehere, origin.getState(), origin, it, placer, false, eq);
         Bukkit.getPluginManager().callEvent(ev);
         if(ev.isCancelled())
@@ -275,6 +273,41 @@ public class BlockHandler {
         return block.getType() == Material.NOTE_BLOCK || block.getType() == Material.TRIPWIRE;
     }
 
+    public static final float fakeSoundVolume = 0.3F;
+
+    public static void playerBreakingWood(Player p, final Block origin) {
+        final UUID uuid = p.getUniqueId();
+
+        if(breakingWood.contains(uuid))
+            return;
+
+        breakingWood.add(uuid);
+
+        p.getScheduler().runAtFixedRate(MineSkyCustom.getInstance(), new java.util.function.Consumer<>() {
+            final Location l = p.getLocation();
+            int n = 0;
+            @Override
+            public void accept(ScheduledTask task) {
+                if(origin.getType().isAir() || n >= 100 || !p.isOnline() || p.isDead() || !breakingWood.contains(uuid)) {
+                    task.cancel();
+                    breakingWood.remove(uuid);
+                    return;
+                }
+
+                RayTraceResult r = p.rayTraceBlocks(5, FluidCollisionMode.NEVER);
+                if (r != null && r.getHitBlock() != null && !r.getHitBlock().getLocation().equals(origin.getLocation())) {
+                    task.cancel();
+                    breakingWood.remove(uuid);
+                    return;
+                }
+
+                p.playSound(p, "minesky.replacement.block.wood.hit", fakeSoundVolume, 0);
+
+                n++;
+            }
+        }, () -> {}, 1, 4);
+    }
+
     public static void playerTryingToBreak(Player p, Block origin, CustomBlock cb) {
         CustomBlockProperties properties = cb.getProperties();
         HardnessResult result = calculateHardnessItem(p, cb, properties.getHardness());
@@ -288,9 +321,8 @@ public class BlockHandler {
             final Location l = p.getLocation();
 
             @Override
-            public void accept(io.papermc.paper.threadedregions.scheduler.ScheduledTask task) {
-
-                float f = ((float) n / (float) result.getHardness()) * (float) 1;
+            public void accept(ScheduledTask task) {
+                float f = ((float) n / (float) result.getHardness());
 
                 int stage = (int) (f * 10.0f);
 
@@ -298,7 +330,7 @@ public class BlockHandler {
                     soundN = 0;
 
                 if (soundN == 0) {
-                    p.playSound(l, cb.getProperties().getSound() + ".hit", 0.4f, 0);
+                    p.playSound(p, cb.getProperties().getSound() + ".hit", fakeSoundVolume, 0);
                 }
 
                 if (stage != breaktime) {
@@ -370,6 +402,25 @@ public class BlockHandler {
                 n++;
             }
         }.runTaskTimer(MineSkyCustom.getInstance(), 0, 3);
+    }
+
+    public static @Nullable CustomBlock getCustomBlock(Block block) {
+        final Material material = block.getType();
+
+        if(material != Material.NOTE_BLOCK)
+            return null;
+
+        NoteBlock noteBlock = (NoteBlock) block.getBlockData();
+
+        return getCustomBlock((NoteBlock) block.getBlockData());
+    }
+
+    public static @Nullable CustomBlock getCustomBlock(NoteBlock noteBlock) {
+        for(CustomBlock cb : MineSkyCustom.REGISTERED_BLOCKS) {
+            if(noteBlock.getNote().getId() == cb.getNote() && noteBlock.getInstrument() == InstrumentConverter.fromMinecraft(cb.getInstrument()))
+                return cb;
+        }
+        return null;
     }
 
     public static CustomObject getCustomObjectFromItemStack(ItemStack it) {

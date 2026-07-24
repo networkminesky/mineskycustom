@@ -29,6 +29,7 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Bisected;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.*;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
@@ -741,6 +742,8 @@ public class InteractEvents implements Listener {
         return w.getRawBrightness(pos, 0);
     }
 
+    public static final SoundGroup WOOD = Material.OAK_LOG.createBlockData().getSoundGroup();
+
     // ProtocolLib
     public static void registerDigEvent() {
         MineSkyCustom.protocolManager.addPacketListener(
@@ -749,7 +752,8 @@ public class InteractEvents implements Listener {
                     @Override
                     public void onPacketReceiving(PacketEvent e) {
                         BlockPosition l = e.getPacket().getBlockPositionModifier().read(0);
-                        Player p = e.getPlayer();
+                        final Player p = e.getPlayer();
+                        final UUID uuid = p.getUniqueId();
 
                         final Location bdL = new Location(p.getWorld(), l.getX(), l.getY(), l.getZ());
                         Bukkit.getRegionScheduler().run(MineSkyCustom.getInstance(), bdL, (task) -> {
@@ -762,6 +766,7 @@ public class InteractEvents implements Listener {
                             switch (type) {
                                 case STOP_DESTROY_BLOCK:
                                 case ABORT_DESTROY_BLOCK: {
+                                    BlockHandler.breakingWood.remove(uuid);
                                     BlockHandler.cancelBreaking(p, bd);
                                     break;
                                 }
@@ -771,6 +776,12 @@ public class InteractEvents implements Listener {
                                         p.getScheduler().run(MineSkyCustom.getInstance(), (playerTask) -> {
                                             p.removePotionEffect(PotionEffectType.MINING_FATIGUE);
                                         }, null);
+
+                                        if(bd.getBlockSoundGroup().equals(WOOD)) {
+                                            BlockHandler.playerBreakingWood(p, bd);
+                                            return;
+                                        }
+
                                         return;
                                     }
 

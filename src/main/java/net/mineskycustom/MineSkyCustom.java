@@ -21,6 +21,7 @@ import net.mineskycustom.custom.machines.Machine;
 import net.mineskycustom.events.InteractEvents;
 import net.mineskycustom.events.InventoryEvents;
 import net.mineskycustom.events.MMODCreativeTab;
+import net.mineskycustom.handler.BlockHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.Instrument;
 import org.bukkit.Material;
@@ -230,6 +231,7 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
                     Block b = p.getLocation().getBlock().getRelative(BlockFace.DOWN);
                     if(b.getType() == Material.NOTE_BLOCK) {
                         if(b.getBlockData() instanceof NoteBlock nb) {
+                            // jump blocks
                             if(nb.getInstrument() == Instrument.BANJO) {
                                 int note = nb.getNote().getId();
                                 if (note == 8)
@@ -263,8 +265,8 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
             //GeyserHook.registerBlocks();
         }
         // Desativado temporariamente
-        ThrowableItemRegistry.registerItem(84, Stormlander.class);
-        ThrowableItemRegistry.registerItem(80, Leviathan.class);
+        //ThrowableItemRegistry.registerItem(84, Stormlander.class);
+        //ThrowableItemRegistry.registerItem(80, Leviathan.class);
 
         //ThrowableItem stormlander2 = ThrowableItemRegistry.createItem("Stormlander2", player);
     }
