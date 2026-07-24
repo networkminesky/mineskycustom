@@ -191,14 +191,17 @@ public class BlockHandler {
                 bd.getWorld().spawnParticle(Particle.BLOCK, l, 80, 0.3, 0.3, 0.3, 1, bd.getBlockData(), true);
         }
 
+        bd.getWorld().playSound(l, cb.getPlantProperties().getSound()+".break", 1, cb.getPlantProperties().getSoundPitch());
+
+        bd.setType(Material.AIR, false);
+
+        if(p != null && p.getGameMode() == GameMode.CREATIVE)
+            return;
+
         bd.getWorld().spawn(l, Item.class, is -> {
             is.setItemStack(cb.getItem().createMineSkyItem().toSpigotItem());
             is.setPickupDelay(15);
         });
-
-        bd.getWorld().playSound(l, cb.getPlantProperties().getSound()+".break", 1, cb.getPlantProperties().getSoundPitch());
-
-        bd.setType(Material.AIR, false);
     }
 
     public static void breakCustomBlock(Player p, Block bd, CustomBlock cb, boolean shouldDrop) {
