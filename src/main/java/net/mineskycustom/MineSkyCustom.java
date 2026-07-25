@@ -22,6 +22,7 @@ import net.mineskycustom.events.InteractEvents;
 import net.mineskycustom.events.InventoryEvents;
 import net.mineskycustom.events.MMODCreativeTab;
 import net.mineskycustom.handler.BlockHandler;
+import net.mineskycustom.hooks.WorldEditHook;
 import org.bukkit.Bukkit;
 import org.bukkit.Instrument;
 import org.bukkit.Material;
@@ -259,11 +260,18 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
 
         l.info("Registrando novos itens");
 
-        l.info("Verificando existência do Geyser no servidor.");
+        l.info("Verificando Geyser.");
         if(getServer().getPluginManager().isPluginEnabled("Geyser-Spigot")) {
             l.info("[GEYSER] Registrando blocos custom dentro do Geyser.");
             //GeyserHook.registerBlocks();
         }
+
+        l.info("Verificando WorldEdit.");
+        if(getServer().getPluginManager().isPluginEnabled("WorldEdit")) {
+            l.info("[GEYSER] Registrando blocos e plantas custom no WorldEdit");
+            WorldEditHook.register();
+        }
+
         // Desativado temporariamente
         //ThrowableItemRegistry.registerItem(84, Stormlander.class);
         //ThrowableItemRegistry.registerItem(80, Leviathan.class);
