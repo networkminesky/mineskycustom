@@ -1,10 +1,12 @@
 package net.mineskycustom.utils;
 
 import net.md_5.bungee.api.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
+import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import java.io.ByteArrayInputStream;
@@ -101,4 +103,34 @@ public class Utils {
         return stage * 10;
     }
 
+    public static boolean isInteractable(@Nullable final Material material) {
+        if (material == null || !material.isBlock()) return false;
+
+        @SuppressWarnings("deprecation")
+        final boolean baseInteractable = material.isInteractable();
+        if (!baseInteractable) return false;
+
+        final String name = material.name();
+
+        if (name.endsWith("_STAIRS")) return false;
+
+        if (name.endsWith("_FENCE") && !name.endsWith("_GATE")) return false;
+
+        switch (material) {
+            case PISTON:
+            case STICKY_PISTON:
+            case PISTON_HEAD:
+            case MOVING_PISTON:
+            case REDSTONE_ORE:
+            case TRIPWIRE:
+            case NOTE_BLOCK:
+            case DEEPSLATE_REDSTONE_ORE:
+            case REDSTONE_WIRE:
+            case PUMPKIN:
+            case CARVED_PUMPKIN:
+                return false;
+            default:
+                return true;
+        }
+    }
 }

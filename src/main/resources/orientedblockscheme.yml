@@ -1,0 +1,32 @@
+item:
+  name: "minesky.blocks.oriented_block"
+  model: 69
+  type: PAPER # if not present, fallback to PAPER
+
+block: # should always point to the main model facing, by default north
+  instrument: "banjo"
+  note: 10
+
+oriented-facing:
+  blocks:
+    north:
+      fake-blocks: [-1, 0, 0]
+      instrument: "banjo"
+      note: 10
+    south:
+      fake-blocks: [0, 0, -1]
+      instrument: "banjo"
+      note: 11
+    west:
+      fake-blocks: [1, 0, 0]
+      instrument: "banjo"
+      note: 12
+    east:
+      fake-blocks: [0, 0, 1]
+      instrument: "banjo"
+      note: 13
+
+properties:
+  action: "ORIENTED_BLOCK"
+  type:
+    predef: "MACHINES"

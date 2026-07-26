@@ -68,7 +68,7 @@ public class MachineHandler {
     public static void addEnergy(Block b, double power) {
         String form = BlockHandler.machineFormatter(b);
 
-        if(MineSkyCustom.data.contains(form)) {
+        /*if(MineSkyCustom.data.contains(form)) {
             CustomBlock cb = new CustomBlock(MineSkyCustom.data.getString(form+".id"));
             if(cb.isMachine() && MineSkyCustom.data.getString(form+".type").equals("MACHINE")) {
 
@@ -79,9 +79,7 @@ public class MachineHandler {
 
                 MineSkyCustom.data.set(form+".energy", calc);
             }
-
-        }
-
+        }*/
     }
 
     public static void generateEnergyOnAllGenerators() {
@@ -100,7 +98,7 @@ public class MachineHandler {
 
             Block b = l.getBlock();
 
-            CustomBlock thisGenerator = new CustomBlock(MineSkyCustom.data.getString(s+".id"));
+            /*CustomBlock thisGenerator = new CustomBlock(MineSkyCustom.data.getString(s+".id"));
             if(thisGenerator.getMachine() != null && thisGenerator.getMachine().isInventoryEnabled()) {
                 for (String sd : MineSkyCustom.data.getConfigurationSection(s + ".inventory").getKeys(false)) {
                     try {
@@ -169,7 +167,7 @@ public class MachineHandler {
                         return;
                     }
                 }
-            }, 1, 5);
+            }, 1, 5);*/
         }
 
         saveData();

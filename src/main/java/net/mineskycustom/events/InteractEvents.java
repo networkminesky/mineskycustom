@@ -26,6 +26,7 @@ import net.mineskycustom.handler.ActionHandler;
 import net.mineskycustom.handler.BlockHandler;
 import net.mineskycustom.utils.Utils;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Bisected;
@@ -53,6 +54,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -161,9 +163,27 @@ public class InteractEvents implements Listener {
             return;
 
         if(b.getType() == Material.NOTE_BLOCK
+                && p.getGameMode() == GameMode.CREATIVE) {
+            for(CustomBlock cb : MineSkyCustom.REGISTERED_BLOCKS) {
+                if(cb.isSame(b)) {
+                    BlockHandler.breakOrientedValues(cb, b, b.getLocation());
+                    return;
+                }
+            }
+        }
+
+        if(b.getType() == Material.NOTE_BLOCK
                 && e.isDropItems()
                 && p.getGameMode() != GameMode.CREATIVE) {
             e.setCancelled(true);
+            return;
+        }
+
+        if(b.getType() == Material.BARRIER
+        && p.getGameMode() == GameMode.CREATIVE /*duh*/) {
+            BlockHandler.BlockEntry custom = BlockHandler.findCustomBlockFromFake(b.getLocation(), b);
+            if(custom != null)
+                BlockHandler.breakCustomBlock(p, custom.block(), custom.customBlock(), true, false);
             return;
         }
 
@@ -496,7 +516,6 @@ public class InteractEvents implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInteract(PlayerInteractEvent e) {
-
         // VFX GROUP PLAYER
         /*
         new BukkitRunnable() {
@@ -553,187 +572,180 @@ public class InteractEvents implements Listener {
         }.runTask(MineSkyCustom.getInstance());
         */
 
-        final ItemStack mao = e.getPlayer().getInventory().getItemInMainHand();
-        if(e.getAction() == Action.RIGHT_CLICK_AIR
-        && mao.getType().equals(Material.IRON_AXE)) {
+        final @Nullable ItemStack item = e.getItem();
 
-            if(e.getItem().hasItemMeta()) {
-                ItemMeta im = e.getItem().getItemMeta();
-                if(!im.hasCustomModelData()) return;
+        if (!e.hasBlock()) return;
 
-                ThrowableItemHandler.runTestsInteraction(e.getPlayer(), e.getItem(), im.getCustomModelData());
-            }
-        }
-
-        if(!e.hasBlock()) return;
-
-        final Block clickedBlock = e.getClickedBlock();
-        final Action action = e.getAction();
         final Player p = e.getPlayer();
-        assert clickedBlock != null;
+        final Block clickedBlock = e.getClickedBlock();
+        if (clickedBlock == null) return;
+
+        final Action action = e.getAction();
+        final EquipmentSlot hand = e.getHand();
         final boolean canBeCustom = BlockHandler.canBlockBeCustom(clickedBlock);
 
-        if(e.getHand() == EquipmentSlot.OFF_HAND
-        && (clickedBlock.getType() == Material.NOTE_BLOCK || clickedBlock.getType() == Material.TRIPWIRE )) {
-            e.setCancelled(true);
-            return;
+        if (canBeCustom) {
+            if (hand == EquipmentSlot.OFF_HAND || action == Action.PHYSICAL) {
+                e.setCancelled(true);
+                return;
+            }
         }
 
-        if(e.getAction() == Action.PHYSICAL && canBeCustom) {
-            e.setCancelled(true);
-            return;
-        }
+        if (hand != EquipmentSlot.HAND) return;
 
-        if(e.getHand() != EquipmentSlot.HAND) return;
+        if (action == Action.RIGHT_CLICK_BLOCK) {
+            // Action handler
+            if(clickedBlock.getType() == Material.NOTE_BLOCK) {
+                CustomBlock customBlock = null;
+                for (CustomBlock cb : MineSkyCustom.REGISTERED_BLOCKS) {
+                    if (cb.isSame(clickedBlock)) {
+                        customBlock = cb;
+                        break;
+                    }
+                }
 
-        // Quebrando plantas
-        /*if(action == Action.LEFT_CLICK_BLOCK) {
-            if(!clickedBlock.getType().equals(Material.TRIPWIRE)) return;
+                if (customBlock != null && !customBlock.getProperties().getAction().isEmpty()) {
+                    if(item == null || (!p.isSneaking())) {
+                        if(duplicateFixer(p))
+                            return;
 
-            for (CustomPlant rb : MineSkyCustom.REGISTERED_PLANTS) {
-                if (rb.isSame(clickedBlock)) {
-                    e.setCancelled(true);
-
-                    BlockBreakEvent blockBreakEvent = new BlockBreakEvent(clickedBlock, e.getPlayer());
-                    Bukkit.getPluginManager().callEvent(blockBreakEvent);
-
-                    if(blockBreakEvent.isCancelled()) {
+                        e.setCancelled(true);
+                        ActionHandler.executeAction(p, customBlock.getProperties().getAction(), clickedBlock, customBlock);
                         return;
                     }
-
-                    //Bukkit.broadcastMessage("break custom plant");
-                    BlockHandler.breakCustomPlant(e.getPlayer(), clickedBlock, rb);
-                    return;
                 }
             }
 
-            // movido para o blockbreakevent
+            // handle interactions in fake-blocks
+            if(clickedBlock.getType() == Material.BARRIER) {
+                if(p.isSneaking()) return;
 
-            return;
-        }*/
-        // Colocando blocos / Colocando plantas
-        if(action == Action.RIGHT_CLICK_BLOCK) {
-            if(e.hasItem()) {
-                final ItemStack naMao = e.getItem();
+                BlockHandler.BlockEntry entry = BlockHandler.findCustomBlockFromFake(clickedBlock.getLocation(), clickedBlock);
+                if(entry != null) {
+                    if(!entry.customBlock().getProperties().getAction().isEmpty()) {
+                        e.setCancelled(true);
+                        BlockHandler.armSwingAnimation(p); // force arm swing because it's not a note_block
+                        ActionHandler.executeAction(p, entry.customBlock().getProperties().getAction(), clickedBlock, entry.customBlock());
+                        return;
+                    }
+                }
+            }
 
-                // Duplicate Fixer
-                if (duplicateFixer.contains(p.getUniqueId())
-                        && canBeCustom) {
-                    duplicateFixer.remove(p.getUniqueId());
+            if (item != null) {
+                if(BlockHandler.getCustomObjectFromItemStack(item) != null && duplicateFixer(p)) {
                     e.setCancelled(true);
                     return;
                 }
-                duplicateFixer.add(p.getUniqueId());
 
-                p.getScheduler().runDelayed(MineSkyCustom.getInstance(), (task) -> {
-                    duplicateFixer.remove(p.getUniqueId());
-                }, null, 1);
+                final Block placeBl = clickedBlock.getRelative(e.getBlockFace());
 
-                Block placeBl = clickedBlock.getRelative(e.getBlockFace());
-
-                // mimica o note-block como um bloco vanilla
                 if (clickedBlock.getType() == Material.NOTE_BLOCK) {
-                    if (naMao.getType().isAir() || !e.hasItem()
-                            || (e.hasItem() && !e.getItem().getType().isBlock())) {
+                    if (!item.getType().isBlock()) {
                         e.setCancelled(true);
                     }
 
-                    CustomBlock cbs = null;
+                    if (item.getType().isBlock()) {
+                        boolean hasNearbyEntities = !p.getWorld().getNearbyEntities(
+                                placeBl.getLocation().add(0.5, 0.5, 0.5), 0.5, 0.5, 0.5
+                        ).isEmpty();
 
-                    for (CustomBlock cb : MineSkyCustom.REGISTERED_BLOCKS) {
-                        if (cb.isSame(clickedBlock) && !cb.getProperties().getAction().isEmpty()) {
-                            cbs = cb;
-                        }
-                    }
-
-                    if ((!p.isSneaking() || p.isSneaking() && !e.hasItem()) && cbs != null) {
-                        e.setCancelled(true);
-                        ActionHandler.executeAction(p, cbs.getProperties().getAction(), clickedBlock, cbs);
-                        return;
-                    }
-
-                    if (!naMao.getType().isAir() && naMao.getType().isBlock()) {
-                        boolean BB = false;
-                        for (Entity en : p.getWorld().getNearbyEntities(placeBl.getLocation().add(0.5, 0.5, 0.5), 0.5D, 0.5D, 0.5D)) {
-                            BB = true;
-                        }
-                        if (!BB && placeBl.getType().isAir()) {
+                        if(!p.isSneaking()
+                        && !hasNearbyEntities
+                        && placeBl.getType().isAir()) {
                             p.setSneaking(true);
-                            clickedBlock.getWorld().playSound(clickedBlock.getLocation(),
-                                    naMao.getType().createBlockData().getSoundGroup().getPlaceSound(), 1, 0.8F);
-                            p.getScheduler().runDelayed(MineSkyCustom.getInstance(), (task) -> {
-                                p.setSneaking(false);
-                            }, null, 2);
-                        } else e.setCancelled(true);
+                            p.getScheduler().runDelayed(MineSkyCustom.getInstance(), (task) -> p.setSneaking(false), null, 2);
+
+                            clickedBlock.getWorld().playSound(
+                                    clickedBlock.getLocation(),
+                                    item.getType().createBlockData().getSoundGroup().getPlaceSound(),
+                                    1.0F,
+                                    0.8F
+                            );
+                        }
+                    } else {
+                        e.setCancelled(true);
                     }
                 }
 
-                if (!String.valueOf(clickedBlock.getType().getHardness()).equals("0.0") &&
-                        clickedBlock.getType() != Material.NOTE_BLOCK) {
-                    p.removePotionEffect(PotionEffectType.MINING_FATIGUE);
+                if (clickedBlock.getType() != Material.NOTE_BLOCK && clickedBlock.getType().getHardness() != 0.0F) {
+                    p.getAttribute(Attribute.BLOCK_BREAK_SPEED).setBaseValue(1.0);
                 }
 
-                CustomObject object = BlockHandler.getCustomObjectFromItemStack(naMao);
+                if(Utils.isInteractable(clickedBlock.getType())
+                        && !p.isSneaking())
+                    return;
+
+                final CustomObject object = BlockHandler.getCustomObjectFromItemStack(item);
+                if (object == null) return;
 
                 final Material pm = placeBl.getType();
-                boolean canPlace = pm.isAir() || !pm.isSolid() && !pm.isBlock() && !pm.isOccluding() && !pm.isInteractable();
-                if (!canPlace || object == null)
-                    return;
+                final boolean canPlace = pm.isAir() || (!pm.isSolid() && !pm.isBlock() && !pm.isOccluding() && !Utils.isInteractable(pm));
+                if (!canPlace) return;
 
                 if (object.isCustomBlock()) {
-                    for (Entity en : placeBl.getWorld().getNearbyEntities(placeBl.getLocation().add(0.5, 0, 0.5), 0.5, 1, 0.5)) {
-                        if (!(en instanceof LivingEntity)) continue;
-                        return;
+                    boolean hasLivingEntity = false;
+                    for (Entity en : placeBl.getWorld().getNearbyEntities(placeBl.getLocation().add(0.5, 0.0, 0.5), 0.5, 1.0, 0.5)) {
+                        if (en instanceof LivingEntity) {
+                            hasLivingEntity = true;
+                            break;
+                        }
+                    }
+
+                    if (hasLivingEntity) return;
+
+                    if(clickedBlock.getType() != Material.NOTE_BLOCK) {
+                        BlockHandler.armSwingAnimation(p);
                     }
 
                     e.setCancelled(true);
-
-                    BlockHandler.placeCustomBlock(p, (CustomBlock) object.getObject(), clickedBlock, placeBl, naMao, e.getHand());
-
+                    BlockHandler.placeCustomBlock(p, (CustomBlock) object.getObject(), clickedBlock, placeBl, item, hand);
                     return;
                 } else {
-                    Block below = placeBl.getRelative(BlockFace.DOWN);
-
+                    final Block below = placeBl.getRelative(BlockFace.DOWN);
                     final CustomPlant cp = (CustomPlant) object.getObject();
                     final CustomPlantProperties cpp = cp.getPlantProperties();
 
-                    Tag<Material> t = Tag.DIRT;
-                    if(!cpp.getTag().isEmpty())
-                        t = Bukkit.getTag("blocks", NamespacedKey.minecraft(cpp.getTag().toLowerCase()), Material.class);
+                    Tag<Material> tag = Tag.DIRT;
+                    if (!cpp.getTag().isEmpty()) {
+                        tag = Bukkit.getTag("blocks", NamespacedKey.minecraft(cpp.getTag().toLowerCase()), Material.class);
+                    }
 
-                    if(t == null) return;
+                    if (tag == null) return;
 
-                    if(!p.isSneaking() && !p.hasPermission("mineskycustom.bypass.light-requirement")) {
-                        if (cpp.hasMinLight()) {
-                            final int NMSLight = getNMSLightLevel(placeBl);
-                            if (cpp.getMinLight() < NMSLight)
-                                return;
-                        }
-                        if (cpp.hasMaxLight()) {
-                            final int NMSLight = getNMSLightLevel(placeBl);
-                            if (cpp.getMaxLight() > NMSLight)
-                                return;
+                    if (!p.isSneaking() && !p.hasPermission("mineskycustom.bypass.light-requirement")) {
+                        if (cpp.hasMinLight() || cpp.hasMaxLight()) {
+                            final int lightLevel = getNMSLightLevel(placeBl);
+                            if (cpp.hasMinLight() && cpp.getMinLight() < lightLevel) return;
+                            if (cpp.hasMaxLight() && cpp.getMaxLight() > lightLevel) return;
                         }
                     }
 
-                    if(cpp.canPlaceOnAnyBlock()) {
-                        if (!below.getType().isSolid())
-                            return;
-                    } else
-                        if (!t.isTagged(below.getType()))
-                            return;
+                    if (cpp.canPlaceOnAnyBlock()) {
+                        if (!below.getType().isSolid()) return;
+                    } else if (!tag.isTagged(below.getType())) {
+                        return;
+                    }
 
                     e.setCancelled(true);
-
-                    BlockHandler.placeCustomPlant(p, (CustomPlant) object.getObject(), clickedBlock, placeBl, naMao, e.getHand());
-
+                    BlockHandler.placeCustomPlant(p, (CustomPlant) object.getObject(), clickedBlock, placeBl, item, hand);
                     return;
                 }
-            } else {
-                if(canBeCustom)
-                    e.setCancelled(true);
+            } else if (canBeCustom) {
+                e.setCancelled(true);
             }
         }
+    }
+
+    public static boolean duplicateFixer(Player player) {
+        boolean contains = duplicateFixer.contains(player.getUniqueId());
+
+        if(!contains) {
+            duplicateFixer.add(player.getUniqueId());
+            player.getScheduler().runDelayed(MineSkyCustom.getInstance(), (task) -> {
+                duplicateFixer.remove(player.getUniqueId());
+            }, null, 1);
+        }
+        return contains;
     }
 
     public static int getNMSLightLevel(Block b) {
@@ -774,7 +786,8 @@ public class InteractEvents implements Listener {
                                     // Bukkit.broadcastMessage("START DESTROY");
                                     if (bd.getType() != Material.NOTE_BLOCK) {
                                         p.getScheduler().run(MineSkyCustom.getInstance(), (playerTask) -> {
-                                            p.removePotionEffect(PotionEffectType.MINING_FATIGUE);
+                                            //p.removePotionEffect(PotionEffectType.MINING_FATIGUE);
+                                            p.getAttribute(Attribute.BLOCK_BREAK_SPEED).setBaseValue(1);
                                         }, null);
 
                                         if(bd.getBlockSoundGroup().equals(WOOD)) {
@@ -788,18 +801,23 @@ public class InteractEvents implements Listener {
                                     for (CustomBlock rb : MineSkyCustom.REGISTERED_BLOCKS) {
                                         // Bukkit.broadcastMessage("lol: "+rb.getId() + " | "+rb.getNote() + " | "+rb.getInstrument()+  " | "+rb.getConfig().getString("block.instrument"));
                                         if (rb.isSame(bd)) {
+                                            p.getAttribute(Attribute.BLOCK_BREAK_SPEED).setBaseValue(0);
                                             BlockHandler.playerTryingToBreak(p, bd, rb);
                                             return;
                                         }
                                     }
 
+                                    /*
                                     Bukkit.getGlobalRegionScheduler().run(MineSkyCustom.getInstance(), (eventTask) -> {
                                         BlockBreakEvent ev = new BlockBreakEvent(bd, p);
                                         Bukkit.getPluginManager().callEvent(ev);
 
-                                        if(!ev.isCancelled())
-                                            bd.setType(Material.AIR);
-                                    });
+                                        if(!ev.isCancelled()) {
+                                            Bukkit.getRegionScheduler().run(MineSkyCustom.getInstance(), bdL, (locationTask) -> {
+                                                bd.setType(Material.AIR);
+                                            });
+                                        }
+                                    });*/
 
                                     break;
                                 }

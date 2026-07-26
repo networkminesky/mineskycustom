@@ -26,6 +26,8 @@ import net.mineskycustom.hooks.WorldEditHook;
 import org.bukkit.Bukkit;
 import org.bukkit.Instrument;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.type.NoteBlock;
@@ -157,16 +159,34 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
 
         if(customBlocksFolder.exists()) {
             for (File f : customBlocksFolder.listFiles()) {
-                YamlConfiguration config = YamlConfiguration.loadConfiguration(f);
+                final YamlConfiguration config = YamlConfiguration.loadConfiguration(f);
 
                 String ID = f.getName();
                 String formatted = ID.split("\\.")[0].trim();
 
-                CustomBlock cb = new CustomBlock(formatted);
+                final int note = config.getInt("block.note", -1);
+                final String instrument = config.getString("block.instrument", "");
 
+                if(note == -1
+                || instrument.isBlank()) {
+                    l.severe("[BLOCKS] Não foi possível registrar: "+ID + ", note ou instrument inválido.");
+                    continue;
+                }
+
+                CustomBlock cb = new CustomBlock(formatted, config,
+                        note, instrument);
                 l.info("[BLOCKS] Registrando bloco: "+ID + ", Hardness: "+cb.getProperties().getHardness());
-
                 MineSkyCustom.REGISTERED_BLOCKS.add(cb);
+
+                if(cb.getOrientedValues() != null) {
+                    for(CustomBlock.OrientedValue value : cb.getOrientedValues().values()) {
+                        l.info("| Registrando oriented blocck: "+value.note());
+
+                        CustomBlock oriented = new CustomBlock(formatted, config,
+                                value.note(), value.instrument());
+                        MineSkyCustom.REGISTERED_BLOCKS.add(oriented);
+                    }
+                }
             }
         }
 
@@ -220,11 +240,12 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
                 if(p.isDead()) continue;
 
                 p.getScheduler().run(MineSkyCustom.getInstance(), (playerTask) -> {
-                    if(!p.hasPotionEffect(PotionEffectType.MINING_FATIGUE)) {
+                    if(p.getAttribute(Attribute.BLOCK_BREAK_SPEED).getBaseValue() == 1) {
                         try {
                             Block z = p.getTargetBlock(null, 5);
                             if (z.getType() == Material.NOTE_BLOCK) {
-                                p.addPotionEffect(slowDiggingPotionEffect);
+                                //p.addPotionEffect(slowDiggingPotionEffect);
+                                p.getAttribute(Attribute.BLOCK_BREAK_SPEED).setBaseValue(0);
                             }
                         } catch(Exception ignored) {}
                     }
@@ -302,7 +323,8 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
         this.getServer().getMessenger().unregisterOutgoingPluginChannel(this);
 
         for(Player p : Bukkit.getOnlinePlayers()) {
-            p.removePotionEffect(PotionEffectType.MINING_FATIGUE);
+            p.getAttribute(Attribute.BLOCK_BREAK_SPEED).setBaseValue(1);
+            //p.removePotionEffect(PotionEffectType.MINING_FATIGUE);
         }
 
         if(protocolManager != null)

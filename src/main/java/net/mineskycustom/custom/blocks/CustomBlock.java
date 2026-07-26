@@ -6,39 +6,70 @@ import net.mineskycustom.handler.InstrumentConverter;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.NoteBlock;
+import org.bukkit.configuration.Configuration;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.io.File;
+import java.util.List;
 
 public class CustomBlock {
 
     private final String id;
-    private final File file;
     private final YamlConfiguration config;
     private final int note;
     private final String instrument;
     private final CustomBlockProperties properties;
     private final CustomBlockItem item;
-    private final Machine machine;
-    public CustomBlock(String blockID) {
-        this.id = blockID;
-        File f = new File(MineSkyCustom.customBlocksFolder, blockID + ".yml");
-        YamlConfiguration cs = YamlConfiguration.loadConfiguration(f);
 
-        this.file = f;
+    private final @Nullable Machine machine;
+
+    private final @Nullable OrientedValues orientedValues;
+
+    public static record OrientedValue(String instrument, int note, List<Integer> fakeBlocks) {}
+    public static record OrientedValues(OrientedValue north, OrientedValue south, OrientedValue west, OrientedValue east) {
+        public List<OrientedValue> values() {
+            return List.of(north, south, west, east);
+        }
+
+        public static @Nullable OrientedValues read(final ConfigurationSection section) {
+            if(section == null)
+                return null;
+
+            OrientedValue north = new OrientedValue(section.getString("north.instrument"),
+                    section.getInt("north.note"), section.getIntegerList("north.fake-blocks"));
+            OrientedValue south = new OrientedValue(section.getString("south.instrument"),
+                    section.getInt("south.note"), section.getIntegerList("south.fake-blocks"));
+            OrientedValue west = new OrientedValue(section.getString("west.instrument"),
+                    section.getInt("west.note"), section.getIntegerList("west.fake-blocks"));
+            OrientedValue east = new OrientedValue(section.getString("east.instrument"),
+                    section.getInt("east.note"), section.getIntegerList("east.fake-blocks"));
+
+            return new OrientedValues(north, south, west, east);
+        }
+    }
+
+    public CustomBlock(String blockID, YamlConfiguration cs, int note, String instrument) {
+        this.id = blockID;
+
+        this.note = note;
+        this.instrument = instrument;
 
         this.config = cs;
 
         if(cs.contains("machine")) {
             this.machine = new Machine(this);
-        }else
+        } else
             this.machine = null;
 
-        this.note = cs.getInt("block.note");
-        this.instrument = cs.getString("block.instrument");
+        ConfigurationSection orientedBlocks = cs.getConfigurationSection("oriented-facing.blocks");
+        if(orientedBlocks != null) {
+            this.orientedValues = OrientedValues.read(orientedBlocks);
+        } else
+            this.orientedValues = null;
 
         this.properties = new CustomBlockProperties(this);
         this.item = new CustomBlockItem(this);
@@ -57,8 +88,8 @@ public class CustomBlock {
         return this.machine;
     }
 
-    public File getFile() {
-        return this.file;
+    public @Nullable OrientedValues getOrientedValues() {
+        return orientedValues;
     }
 
     public boolean isAlt() {
@@ -96,10 +127,7 @@ public class CustomBlock {
         NoteBlock nb = (NoteBlock) t.getBlockData();
         String nbins = InstrumentConverter.fromSpigot(nb.getInstrument());
 
-        if(this.getInstrument().equalsIgnoreCase(nbins) && this.getNote()==(int)nb.getNote().getId()) {
-            return true;
-        }
-        return false;
+        return this.getInstrument().equalsIgnoreCase(nbins) && this.getNote()==(int)nb.getNote().getId();
     }
 
     public boolean isSame(ItemStack t) {

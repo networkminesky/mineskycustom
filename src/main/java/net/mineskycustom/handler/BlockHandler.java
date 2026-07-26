@@ -3,6 +3,8 @@ package net.mineskycustom.handler;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
 import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket;
@@ -31,11 +33,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BlockHandler {
 
@@ -54,20 +56,44 @@ public class BlockHandler {
         if(ev.isCancelled())
             return;
 
-        if(origin.getWorld().getNearbyEntities(origin.getLocation().add(0.5, 0.5, 0.5), 0.5D, 0.5D, 0.5D).size() > 0)
+        if(!origin.getWorld().getNearbyEntities(origin.getLocation().add(0.5, 0.5, 0.5), 0.5D, 0.5D, 0.5D).isEmpty())
             return;
 
         NoteBlock nb = (NoteBlock)Material.NOTE_BLOCK.createBlockData();
-        nb.setNote(new Note(cb.getNote()));
-        nb.setInstrument(InstrumentConverter.fromMinecraft(cb.getInstrument()));
+
+        if(cb.getOrientedValues() != null) {
+            CustomBlock.OrientedValues oriented = cb.getOrientedValues();
+            BlockFace opposite = placer.getFacing().getOppositeFace();
+
+            CustomBlock.OrientedValue value = switch (opposite) {
+                case SOUTH -> oriented.south();
+                case WEST -> oriented.west();
+                case EAST -> oriented.east();
+                default -> oriented.north();
+            };
+
+            nb.setNote(new Note(value.note()));
+            nb.setInstrument(InstrumentConverter.fromMinecraft(value.instrument()));
+
+            if(value.fakeBlocks().size() >= 3) {
+                final Location relative = placehere.getLocation().clone()
+                        .add(value.fakeBlocks().get(0), value.fakeBlocks().get(1), value.fakeBlocks().get(2));
+
+                if(!placehere.getWorld().getType(relative).isAir()
+                || !placehere.getWorld().getNearbyEntities(
+                        relative.clone().add(0.5, 0.5, 0.5), 0.5, 0.5, 0.5).isEmpty()) {
+                    return;
+                }
+
+                placehere.getWorld().setType(relative, Material.BARRIER);
+            }
+        } else {
+            nb.setNote(new Note(cb.getNote()));
+            nb.setInstrument(InstrumentConverter.fromMinecraft(cb.getInstrument()));
+        }
 
         placehere.setBlockData(nb);
         placehere.getWorld().playSound(placehere.getLocation(), cb.getProperties().getSound()+".place", 1, 0.8F);
-
-        ClientboundAnimatePacket animation = new ClientboundAnimatePacket(((CraftPlayer) placer).getHandle(), 0);
-        for(Player bs : Bukkit.getOnlinePlayers()) {
-            ((CraftPlayer) bs).getHandle().connection.send(animation);
-        }
 
         if(placer.getGameMode() == GameMode.SURVIVAL || placer.getGameMode() == GameMode.ADVENTURE) {
             it.setAmount(it.getAmount()-1);
@@ -80,7 +106,6 @@ public class BlockHandler {
     }
 
     public static void placeCustomPlant(Player placer, CustomPlant cb, Block origin, Block placehere, ItemStack it, EquipmentSlot eq) {
-
         BlockPlaceEvent ev = new BlockPlaceEvent(placehere, origin.getState(), origin, it, placer, false, eq);
         Bukkit.getPluginManager().callEvent(ev);
         if(ev.isCancelled())
@@ -102,14 +127,18 @@ public class BlockHandler {
         placehere.getWorld().playSound(placehere.getLocation(), cb.getPlantProperties().getSound()+".place", 1,
                 cb.getPlantProperties().getSoundPitch());
 
-        ClientboundAnimatePacket animation = new ClientboundAnimatePacket(((CraftPlayer) placer).getHandle(), 0);
-        for(Player bs : Bukkit.getOnlinePlayers()) {
-            ((CraftPlayer) bs).getHandle().connection.send(animation);
-        }
+        armSwingAnimation(placer);
 
         if(placer.getGameMode() == GameMode.SURVIVAL || placer.getGameMode() == GameMode.ADVENTURE) {
             it.setAmount(it.getAmount()-1);
             placer.getInventory().setItem(eq, it);
+        }
+    }
+
+    public static void armSwingAnimation(Player p) {
+        ClientboundAnimatePacket animation = new ClientboundAnimatePacket(((CraftPlayer) p).getHandle(), 0);
+        for(Player bs : Bukkit.getOnlinePlayers()) {
+            ((CraftPlayer) bs).getHandle().connection.send(animation);
         }
     }
 
@@ -202,10 +231,24 @@ public class BlockHandler {
         });
     }
 
-    public static void breakCustomBlock(Player p, Block bd, CustomBlock cb, boolean shouldDrop) {
+    public static void breakCustomBlock(Player p, Block bd, CustomBlock cb, boolean particles, boolean shouldDrop) {
+        if(cb == null)
+            return;
 
-        if(cb.isAlt())
-            cb = new CustomBlock(cb.getIdWithoutAlt());
+        if(cb.isAlt()) {
+            CustomBlock alt = null;
+            for(CustomBlock block : MineSkyCustom.REGISTERED_BLOCKS) {
+                if(block.getId().equalsIgnoreCase(cb.getIdWithoutAlt())) {
+                    alt = block;
+                    break;
+                }
+            }
+
+            if(alt != null) {
+                p.sendMessage(Component.text("Um erro ocorreu ao quebrar esse bloco.").color(NamedTextColor.RED));
+                return;
+            }
+        }
 
         BlockBreakEvent ev = new BlockBreakEvent(bd, p);
         ev.setDropItems(false);
@@ -223,8 +266,9 @@ public class BlockHandler {
             ((CraftPlayer) bs).getHandle().connection.send(packet);
         }
 
-        if(p.getGameMode() != GameMode.CREATIVE)
-            bd.getWorld().spawnParticle(Particle.BLOCK, l, 80, 0.3, 0.3, 0.3, 1, bd.getBlockData(), true);
+        if(particles)
+            bd.getWorld().spawnParticle(Particle.BLOCK, l,
+                    80, 0.3, 0.3, 0.3, 1, bd.getBlockData(), true);
 
         if(cb.isMachine()) {
             String formatter = machineFormatter(bd);
@@ -260,9 +304,39 @@ public class BlockHandler {
         }
 
         bd.getWorld().playSound(l, cb.getProperties().getSound()+".break", 1, 0.8f);
-
         bd.setType(Material.AIR);
 
+        breakOrientedValues(cb, bd, bd.getLocation().clone());
+    }
+
+    public static void breakOrientedValues(final CustomBlock cb, final Block bd, final Location origin) {
+        if(cb.getOrientedValues() == null)
+            return;
+
+        final CustomBlock.OrientedValues values = cb.getOrientedValues();
+
+        CustomBlock.OrientedValue value = null;
+        for(CustomBlock.OrientedValue find : values.values()) {
+            if(find.note() == cb.getNote()
+                    && find.instrument().equalsIgnoreCase(cb.getInstrument())) {
+                value = find;
+                break;
+            }
+        }
+
+        if(value == null)
+            return;
+
+        if(value.fakeBlocks().size() < 3)
+            return;
+
+        final Location barrier = origin.add(value.fakeBlocks().get(0), value.fakeBlocks().get(1), value.fakeBlocks().get(2));
+        Bukkit.getRegionScheduler().run(MineSkyCustom.getInstance(), barrier, (task) -> {
+            if(origin.getWorld().getType(barrier) == Material.BARRIER) {
+                origin.getWorld().setType(barrier, Material.AIR);
+                origin.getWorld().spawnParticle(Particle.BLOCK, barrier, 80, 0.3, 0.3, 0.3, 1, bd.getBlockData(), true);
+            }
+        });
     }
 
     public static boolean canBlockBeCustom(Material m) {
@@ -314,55 +388,89 @@ public class BlockHandler {
 
         BlockPos bp = new BlockPos(origin.getX(), origin.getY(), origin.getZ());
 
-        ScheduledTask b = p.getScheduler().runAtFixedRate(MineSkyCustom.getInstance(), new java.util.function.Consumer<>() {
-            int n = 0;
-            int soundN = 0;
-            int breaktime = 0;
-            final Location l = p.getLocation();
+        AtomicInteger n = new AtomicInteger();
+        AtomicInteger soundN = new AtomicInteger();
+        AtomicInteger breaktime = new AtomicInteger();
 
-            @Override
-            public void accept(ScheduledTask task) {
-                float f = ((float) n / (float) result.getHardness());
+        final Location originLocation = origin.getLocation();
+        ScheduledTask b = Bukkit.getRegionScheduler().runAtFixedRate(MineSkyCustom.getInstance(), originLocation, (task) -> {
+            float f = ((float) n.get() / (float) result.getHardness()) * (float) 1;
 
-                int stage = (int) (f * 10.0f);
+            int stage = (int) (f * 10.0f);
 
-                if (soundN == 4)
-                    soundN = 0;
+            // Bukkit.broadcastMessage(stage+" | "+f);
 
-                if (soundN == 0) {
-                    p.playSound(p, cb.getProperties().getSound() + ".hit", fakeSoundVolume, 0);
-                }
+            if(soundN.get() == 4)
+                soundN.set(0);
 
-                if (stage != breaktime) {
-                    if (breaktime <= 9) {
-                        ClientboundBlockDestructionPacket packet = new ClientboundBlockDestructionPacket(0, bp, breaktime);
-                        for (Player bs : Bukkit.getOnlinePlayers()) {
-                            ((CraftPlayer) bs).getHandle().connection.send(packet);
-                        }
-                    }
-                    breaktime++;
-                }
-
-                if (breaktime == 12 || result.getHardness() <= 0) {
-                    breakCustomBlock(p, origin, cb, result.isUsingRightTool());
-
-                    task.cancel();
-                    return;
-                }
-
-                RayTraceResult r = p.rayTraceBlocks(5, FluidCollisionMode.NEVER);
-                if (r != null && r.getHitBlock() != null && !r.getHitBlock().getLocation().equals(origin.getLocation())) {
-                    cancelBreaking(p, origin);
-                    task.cancel();
-                    return;
-                }
-
-                n++;
-                soundN++;
+            if(soundN.get() == 0) {
+                p.playSound(originLocation, cb.getProperties().getSound()+".hit", 0.4f, 0);
             }
-        }, () -> {}, 1, 1);
+
+            final int breakT = breaktime.get();
+            if(stage != breakT) {
+                if(breakT <= 9) {
+                    ClientboundBlockDestructionPacket packet = new ClientboundBlockDestructionPacket(0, bp, breakT);
+                    for (Player bs : Bukkit.getOnlinePlayers()) {
+                        ((CraftPlayer) bs).getHandle().connection.send(packet);
+                    }
+                }
+                breaktime.incrementAndGet();
+            }
+
+            if(breakT == 12 || result.getHardness() <= 0/* || n == hardness*/ ) {
+                breakCustomBlock(p, origin, cb, true, result.isUsingRightTool());
+                task.cancel();
+                return;
+            }
+
+            RayTraceResult r = p.rayTraceBlocks(5, FluidCollisionMode.NEVER);
+            if(r != null && r.getHitBlock() != null && !r.getHitBlock().getLocation().equals(origin.getLocation())) {
+                cancelBreaking(p, origin);
+                task.cancel();
+                return;
+            }
+
+            n.getAndIncrement();
+            soundN.getAndIncrement();
+        }, 1, 1);
 
         BLOCKS.put(origin, b);
+    }
+
+    public static record BlockEntry(CustomBlock customBlock, Block block) {}
+
+    private static @Nullable BlockEntry checkRelativeFromFake(Location origin, Block barrier, Block block) {
+        if(block.getType() != Material.NOTE_BLOCK)
+            return null;
+
+        CustomBlock custom = getCustomBlock((NoteBlock) block.getBlockData());
+        if(custom == null || custom.getOrientedValues() == null)
+            return null;
+
+        for(CustomBlock.OrientedValue value : custom.getOrientedValues().values()) {
+            final List<Integer> fakes = value.fakeBlocks();
+            if(fakes.size() >= 3 || origin.clone().add(fakes.get(0), fakes.get(1), fakes.get(2)).equals(block.getLocation())) {
+                return new BlockEntry(custom, block);
+            }
+        }
+
+        return null;
+    }
+
+    public static @Nullable BlockEntry findCustomBlockFromFake(Location origin, Block barrier) {
+        if(barrier.getType() != Material.BARRIER)
+            return null;
+
+        BlockEntry block = checkRelativeFromFake(origin, barrier, barrier.getRelative(BlockFace.WEST));
+        if(block == null)
+            block = checkRelativeFromFake(origin, barrier, barrier.getRelative(BlockFace.EAST));
+        if(block == null)
+            block = checkRelativeFromFake(origin, barrier, barrier.getRelative(BlockFace.SOUTH));
+        if(block == null)
+            block = checkRelativeFromFake(origin, barrier, barrier.getRelative(BlockFace.NORTH));
+
+        return block;
     }
 
     // 120 = ADICIONAR BLOCO
@@ -407,12 +515,7 @@ public class BlockHandler {
     public static @Nullable CustomBlock getCustomBlock(Block block) {
         final Material material = block.getType();
 
-        if(material != Material.NOTE_BLOCK)
-            return null;
-
-        NoteBlock noteBlock = (NoteBlock) block.getBlockData();
-
-        return getCustomBlock((NoteBlock) block.getBlockData());
+        return (material == Material.NOTE_BLOCK ? getCustomBlock((NoteBlock) block.getBlockData()) : null);
     }
 
     public static @Nullable CustomBlock getCustomBlock(NoteBlock noteBlock) {
@@ -423,7 +526,9 @@ public class BlockHandler {
         return null;
     }
 
-    public static CustomObject getCustomObjectFromItemStack(ItemStack it) {
+    public static @Nullable CustomObject getCustomObjectFromItemStack(@Nullable ItemStack it) {
+        if(it == null) return null;
+
         int cmd = 0;
         final Material material = it.getType();
 
