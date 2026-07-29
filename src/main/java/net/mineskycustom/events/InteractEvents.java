@@ -503,6 +503,26 @@ public class InteractEvents implements Listener {
         }
     }
 
+    @EventHandler
+    public void onPiston(BlockPistonExtendEvent e) {
+        for(Block block : e.getBlocks()) {
+            if(block.getType() == Material.NOTE_BLOCK
+            || block.getType() == Material.TRIPWIRE) {
+                e.setCancelled(true);
+                return;
+            }
+        }
+    }
+    @EventHandler
+    public void onPiston(BlockPistonRetractEvent e) {
+        for(Block block : e.getBlocks()) {
+            if(block.getType() == Material.NOTE_BLOCK) {
+                e.setCancelled(true);
+                return;
+            }
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInteract(PlayerInteractEvent e) {
         // VFX GROUP PLAYER
