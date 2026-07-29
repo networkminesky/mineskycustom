@@ -249,17 +249,6 @@ public class InteractEvents implements Listener {
     }
 
     @EventHandler
-    public void onGlide(EntityToggleGlideEvent e) {
-        if(!e.isGliding())
-            return;
-
-        if(!e.getEntity().hasPermission("minesky.elytra")) {
-            e.getEntity().sendMessage("§cElytras são desativadas no servidor. Você pode adquirir parapentes no /mercado");
-            e.setCancelled(true);
-        }
-    }
-
-    @EventHandler
     public void damage(EntityDamageEvent e) {
         if(e.getEntityType() != EntityType.PLAYER)
             return;
@@ -573,14 +562,22 @@ public class InteractEvents implements Listener {
         */
 
         final @Nullable ItemStack item = e.getItem();
+        final Action action = e.getAction();
+        final Player p = e.getPlayer();
+
+        if(item != null
+        && item.getType() == Material.FIREWORK_ROCKET
+        && action == Action.RIGHT_CLICK_AIR) {
+            if(!p.hasPermission("minesky.elytra")) {
+                e.setCancelled(true);
+            }
+        }
 
         if (!e.hasBlock()) return;
 
-        final Player p = e.getPlayer();
         final Block clickedBlock = e.getClickedBlock();
         if (clickedBlock == null) return;
 
-        final Action action = e.getAction();
         final EquipmentSlot hand = e.getHand();
         final boolean canBeCustom = BlockHandler.canBlockBeCustom(clickedBlock);
 
