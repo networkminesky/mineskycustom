@@ -542,8 +542,8 @@ public class BlockHandler {
                 if(item.model() == cmd && material == item.spigotMaterial())
                     return new CustomObject(cb);
             } else {
-                final net.mineskyitems.entities.item.Item custom = net.mineskyitems.entities.item.ItemHandler.getItemFromStack(it);
-                if(custom.buildStack().isSimilar(it))
+                final net.mineskyitems.entities.item.Item custom = net.mineskyitems.entities.item.ItemHandler.getItemById(item.mineskyItemId());
+                if(custom != null && custom.buildStack().isSimilar(it))
                     return new CustomObject(cb);
             }
         }
@@ -554,8 +554,8 @@ public class BlockHandler {
                 if(item.model() == cmd && material == item.spigotMaterial())
                     return new CustomObject(cp);
             } else {
-                final net.mineskyitems.entities.item.Item custom = net.mineskyitems.entities.item.ItemHandler.getItemFromStack(it);
-                if(custom.buildStack().isSimilar(it))
+                final net.mineskyitems.entities.item.Item custom = net.mineskyitems.entities.item.ItemHandler.getItemById(item.mineskyItemId());
+                if(custom != null && custom.buildStack().isSimilar(it))
                     return new CustomObject(cp);
             }
         }

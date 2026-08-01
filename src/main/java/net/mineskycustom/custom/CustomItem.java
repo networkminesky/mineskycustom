@@ -18,7 +18,7 @@ public record CustomItem(String name, int model, String material, String minesky
     }
 
     public boolean isMineSkyItem() {
-        return mineskyItemId != null;
+        return !mineskyItemId.isBlank();
     }
 
     public ItemStack toSpigotItem() {
