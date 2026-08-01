@@ -86,10 +86,10 @@ public class CustomGUI implements Listener {
 
             Object obj = contents.get(i);
             if(obj instanceof CustomPlant cp) {
-                inv.addItem(extraLoreOnItem(cp.getItem().toSpigotItem(), "§7PLANT"));
+                inv.addItem(cp.getItem().toSpigotItem());
             }
             if(obj instanceof CustomBlock cb) {
-                inv.addItem(extraLoreOnItem(cb.getItem().toSpigotItem(), "§7BLOCK"));
+                inv.addItem(cb.getItem().toSpigotItem());
             }
 
             currentSlot++;
@@ -103,13 +103,6 @@ public class CustomGUI implements Listener {
                 pages.put(currentPage, invNew);
             }
         }
-    }
-
-    public static ItemStack extraLoreOnItem(ItemStack it, String lore) {
-        ItemMeta im = it.getItemMeta();
-        im.setLore(List.of(Utils.c(lore)));
-        it.setItemMeta(im);
-        return it;
     }
 
     @EventHandler
@@ -158,5 +151,4 @@ public class CustomGUI implements Listener {
         if (pages.containsValue(e.getInventory()))
             e.setCancelled(true);
     }
-
 }
