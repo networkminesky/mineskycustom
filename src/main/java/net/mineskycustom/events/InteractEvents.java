@@ -374,13 +374,13 @@ public class InteractEvents implements Listener {
         if(b.getType() == Material.NOTE_BLOCK) {
             for(CustomBlock cb : MineSkyCustom.REGISTERED_BLOCKS) {
                 if(cb.isSame(b))
-                    spigotItem = cb.getItem().createMineSkyItem().toSpigotItem();
+                    spigotItem = cb.getItem().toSpigotItem();
             }
         } else {
             // Tripwire
             for(CustomPlant cp : MineSkyCustom.REGISTERED_PLANTS) {
                 if(cp.isSame(b))
-                    spigotItem = cp.getItem().createMineSkyItem().toSpigotItem();
+                    spigotItem = cp.getItem().toSpigotItem();
             }
         }
 

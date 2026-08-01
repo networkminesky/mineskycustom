@@ -1,6 +1,7 @@
 package net.mineskycustom.custom.plants;
 
 import net.mineskycustom.MineSkyCustom;
+import net.mineskycustom.custom.CustomItem;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -15,7 +16,7 @@ public class CustomPlant {
     private final File file;
     private final YamlConfiguration config;
 
-    private final CustomPlantItem item;
+    private final CustomItem item;
     private final CustomPlantProperties properties;
 
     private final boolean attached;
@@ -42,7 +43,7 @@ public class CustomPlant {
         this.west = cs.getBoolean("block.west");
 
         this.properties = new CustomPlantProperties(this);
-        this.item = new CustomPlantItem(this);
+        this.item = CustomItem.serialize(cs);
     }
 
     public CustomPlantProperties getPlantProperties() {
@@ -85,7 +86,7 @@ public class CustomPlant {
         return west;
     }
 
-    public CustomPlantItem getItem() {
+    public CustomItem getItem() {
         return item;
     }
 

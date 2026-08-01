@@ -9,13 +9,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
 import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket;
 import net.mineskycustom.MineSkyCustom;
+import net.mineskycustom.custom.CustomItem;
 import net.mineskycustom.custom.CustomObject;
 import net.mineskycustom.custom.blocks.CustomBlock;
-import net.mineskycustom.custom.blocks.CustomBlockItem;
 import net.mineskycustom.custom.blocks.CustomBlockProperties;
 import net.mineskycustom.custom.HardnessResult;
 import net.mineskycustom.custom.plants.CustomPlant;
-import net.mineskycustom.custom.plants.CustomPlantItem;
 import net.mineskycustom.utils.Utils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -226,7 +225,7 @@ public class BlockHandler {
             return;
 
         bd.getWorld().spawn(l, Item.class, is -> {
-            is.setItemStack(cb.getItem().createMineSkyItem().toSpigotItem());
+            is.setItemStack(cb.getItem().toSpigotItem());
             is.setPickupDelay(15);
         });
     }
@@ -296,9 +295,8 @@ public class BlockHandler {
         }
 
         if(shouldDrop) {
-            CustomBlock finalCb = cb;
             bd.getWorld().spawn(l, Item.class, is -> {
-                is.setItemStack(finalCb.getItem().createMineSkyItem().toSpigotItem());
+                is.setItemStack(cb.getItem().toSpigotItem());
                 is.setPickupDelay(15);
             });
         }
@@ -498,8 +496,8 @@ public class BlockHandler {
             @Override
             public void run() {
                 if (n < sized) {
-                    CustomBlockItem it = MineSkyCustom.REGISTERED_BLOCKS.get(n).getItem();
-                    sendAddBlockPacket(p, it.getMaterial() + "," + it.getModel() + "," + it.getName(), 120);
+                    CustomItem it = MineSkyCustom.REGISTERED_BLOCKS.get(n).getItem();
+                    sendAddBlockPacket(p, it.material() + "," + it.model() + "," + it.name(), 120);
                 }
                 if (sized == 0 || n >= sized) {
                     sendAddBlockPacket(p, "finish", 121);
@@ -539,15 +537,27 @@ public class BlockHandler {
         }
 
         for(CustomBlock cb : MineSkyCustom.REGISTERED_BLOCKS) {
-            CustomBlockItem cbitem = cb.getItem();
-            if(cbitem.getModel() == cmd && material == cbitem.getSpigotMaterial())
-                return new CustomObject(cb);
+            final CustomItem item = cb.getItem();
+            if(!item.isMineSkyItem()) {
+                if(item.model() == cmd && material == item.spigotMaterial())
+                    return new CustomObject(cb);
+            } else {
+                final net.mineskyitems.entities.item.Item custom = net.mineskyitems.entities.item.ItemHandler.getItemFromStack(it);
+                if(custom.buildStack().isSimilar(it))
+                    return new CustomObject(cb);
+            }
         }
 
         for(CustomPlant cp : MineSkyCustom.REGISTERED_PLANTS) {
-            CustomPlantItem cpitem = cp.getItem();
-            if(cpitem.getModel() == cmd && material == cpitem.getSpigotMaterial())
-                return new CustomObject(cp);
+            final CustomItem item = cp.getItem();
+            if(!item.isMineSkyItem()) {
+                if(item.model() == cmd && material == item.spigotMaterial())
+                    return new CustomObject(cp);
+            } else {
+                final net.mineskyitems.entities.item.Item custom = net.mineskyitems.entities.item.ItemHandler.getItemFromStack(it);
+                if(custom.buildStack().isSimilar(it))
+                    return new CustomObject(cp);
+            }
         }
 
         return null;

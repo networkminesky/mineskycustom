@@ -12,6 +12,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.json.simple.JSONObject;
 
+@Deprecated
 public class MineSkyItem {
 
     public static ItemStack EMPTY_ITEM = new ItemStack(Material.AIR);

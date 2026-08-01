@@ -1,12 +1,11 @@
 package net.mineskycustom.custom.blocks;
 
-import net.mineskycustom.MineSkyCustom;
+import net.mineskycustom.custom.CustomItem;
 import net.mineskycustom.custom.machines.Machine;
 import net.mineskycustom.handler.InstrumentConverter;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.NoteBlock;
-import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
@@ -23,7 +22,7 @@ public class CustomBlock {
     private final int note;
     private final String instrument;
     private final CustomBlockProperties properties;
-    private final CustomBlockItem item;
+    private final CustomItem item;
 
     private final @Nullable Machine machine;
 
@@ -72,7 +71,7 @@ public class CustomBlock {
             this.orientedValues = null;
 
         this.properties = new CustomBlockProperties(this);
-        this.item = new CustomBlockItem(this);
+        this.item = CustomItem.serialize(cs);
     }
 
     public CustomBlockProperties getProperties() {
@@ -112,7 +111,7 @@ public class CustomBlock {
         return this.instrument;
     }
 
-    public CustomBlockItem getItem() {
+    public CustomItem getItem() {
         return this.item;
     }
 
@@ -129,15 +128,4 @@ public class CustomBlock {
 
         return this.getInstrument().equalsIgnoreCase(nbins) && this.getNote()==(int)nb.getNote().getId();
     }
-
-    public boolean isSame(ItemStack t) {
-        if(!t.hasItemMeta()) return false;
-        ItemMeta im = t.getItemMeta();
-        if(!im.hasCustomModelData())
-            return false;
-        CustomBlockItem item = this.getItem();
-
-        return im.getCustomModelData() == item.getModel() && item.getSpigotMaterial() == t.getType();
-    }
-
 }

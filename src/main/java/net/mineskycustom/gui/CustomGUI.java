@@ -86,10 +86,10 @@ public class CustomGUI implements Listener {
 
             Object obj = contents.get(i);
             if(obj instanceof CustomPlant cp) {
-                inv.addItem(extraLoreOnItem(cp.getItem().createMineSkyItem().toSpigotItem(), "§7PLANT"));
+                inv.addItem(extraLoreOnItem(cp.getItem().toSpigotItem(), "§7PLANT"));
             }
             if(obj instanceof CustomBlock cb) {
-                inv.addItem(extraLoreOnItem(cb.getItem().createMineSkyItem().toSpigotItem(), "§7BLOCK"));
+                inv.addItem(extraLoreOnItem(cb.getItem().toSpigotItem(), "§7BLOCK"));
             }
 
             currentSlot++;
