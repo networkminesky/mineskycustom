@@ -52,13 +52,10 @@ public class CustomGUI implements Listener {
     }
 
     public static Inventory createNewInventory(final int totalContents, final int currentPage, final int maxPages) {
-        Inventory invNew = Bukkit.createInventory(null, 54, "Total: "+totalContents+" - Página "+(currentPage+1)+"/"+maxPages);
+        Inventory invNew = Bukkit.createInventory(null, 54, "Total: "+totalContents+" - Página "+(currentPage+1));
 
-        final ItemStack back = createNewButton(6, "Voltar");
-        final ItemStack next = createNewButton(5, "Próxima");
-
-        invNew.setItem(47, back);
-        invNew.setItem(51, next);
+        invNew.setItem(47, createNewButton(27, "Voltar"));
+        invNew.setItem(51, createNewButton(24, "Próxima"));
 
         return invNew;
     }
@@ -136,12 +133,6 @@ public class CustomGUI implements Listener {
         }
 
         if(clickedItem == null) return;
-
-        ItemMeta im = clickedItem.getItemMeta();
-        im.setLore(null);
-
-        clickedItem.setItemMeta(im);
-
         p.getInventory().addItem(clickedItem);
     }
 
