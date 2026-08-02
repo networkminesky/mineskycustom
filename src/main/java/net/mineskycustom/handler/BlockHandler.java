@@ -230,7 +230,7 @@ public class BlockHandler {
         });
     }
 
-    public static void breakCustomBlock(Player p, Block bd, CustomBlock cb, boolean particles, boolean shouldDrop) {
+    public static void breakCustomBlock(Player p, @Nullable ItemStack item, Block bd, CustomBlock cb, boolean particles, boolean shouldDrop) {
         if(cb == null)
             return;
 
@@ -296,7 +296,20 @@ public class BlockHandler {
 
         if(shouldDrop) {
             bd.getWorld().spawn(l, Item.class, is -> {
-                is.setItemStack(cb.getItem().toSpigotItem());
+                if (cb.getGemItem() != null && item != null && item.getEnchantmentLevel(Enchantment.SILK_TOUCH) == 0) {
+                    int level = item.getEnchantmentLevel(Enchantment.FORTUNE);
+                    int amount = 1;
+
+                    if (level > 0) { // simulates fortune
+                        int roll = java.util.concurrent.ThreadLocalRandom.current().nextInt(level + 2);
+                        int bonus = Math.max(0, roll - 1);
+                        amount += bonus;
+                    }
+
+                    is.setItemStack(cb.getGemItem().toSpigotItem(amount));
+                } else {
+                    is.setItemStack(cb.getItem().toSpigotItem());
+                }
                 is.setPickupDelay(15);
             });
         }
@@ -380,7 +393,7 @@ public class BlockHandler {
         }, () -> {}, 1, 4);
     }
 
-    public static void playerTryingToBreak(Player p, Block origin, CustomBlock cb) {
+    public static void playerTryingToBreak(Player p, ItemStack item, Block origin, CustomBlock cb) {
         CustomBlockProperties properties = cb.getProperties();
         HardnessResult result = calculateHardnessItem(p, cb, properties.getHardness());
 
@@ -417,7 +430,7 @@ public class BlockHandler {
             }
 
             if(breakT == 12 || result.getHardness() <= 0/* || n == hardness*/ ) {
-                breakCustomBlock(p, origin, cb, true, result.isUsingRightTool());
+                breakCustomBlock(p, item,  origin, cb, true, result.isUsingRightTool());
                 task.cancel();
                 return;
             }

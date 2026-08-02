@@ -10,6 +10,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -22,7 +23,13 @@ public class CustomBlock {
     private final int note;
     private final String instrument;
     private final CustomBlockProperties properties;
-    private final CustomItem item;
+
+    private final @NotNull CustomItem item;
+    /**
+     * Gem or raw item, just like when it drops the ore-gem directly when you break a diamond ore or an emerald ore,
+     * without silk touhc, or even raw ores like iron and gold
+     */
+    private final @Nullable CustomItem gemItem;
 
     private final @Nullable Machine machine;
 
@@ -71,7 +78,9 @@ public class CustomBlock {
             this.orientedValues = null;
 
         this.properties = new CustomBlockProperties(this);
-        this.item = CustomItem.serialize(cs);
+        this.item = CustomItem.serialize(cs.getConfigurationSection("item"));
+
+        this.gemItem = CustomItem.serialize(cs.getConfigurationSection("gem"));
     }
 
     public CustomBlockProperties getProperties() {
@@ -85,6 +94,11 @@ public class CustomBlock {
     @Nullable
     public Machine getMachine() {
         return this.machine;
+    }
+
+    @Nullable
+    public CustomItem getGemItem() {
+        return this.gemItem;
     }
 
     public @Nullable OrientedValues getOrientedValues() {

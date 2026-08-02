@@ -43,7 +43,7 @@ public class CustomPlant {
         this.west = cs.getBoolean("block.west");
 
         this.properties = new CustomPlantProperties(this);
-        this.item = CustomItem.serialize(cs);
+        this.item = CustomItem.serialize(cs.getConfigurationSection("item"));
     }
 
     public CustomPlantProperties getPlantProperties() {

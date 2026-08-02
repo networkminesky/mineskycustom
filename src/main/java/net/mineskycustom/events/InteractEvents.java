@@ -183,7 +183,7 @@ public class InteractEvents implements Listener {
         && p.getGameMode() == GameMode.CREATIVE /*duh*/) {
             BlockHandler.BlockEntry custom = BlockHandler.findCustomBlockFromFake(b.getLocation(), b);
             if(custom != null)
-                BlockHandler.breakCustomBlock(p, custom.block(), custom.customBlock(), true, false);
+                BlockHandler.breakCustomBlock(p, e.getPlayer().getInventory().getItemInMainHand(), custom.block(), custom.customBlock(), true, false);
             return;
         }
 
@@ -819,7 +819,7 @@ public class InteractEvents implements Listener {
                                         // Bukkit.broadcastMessage("lol: "+rb.getId() + " | "+rb.getNote() + " | "+rb.getInstrument()+  " | "+rb.getConfig().getString("block.instrument"));
                                         if (rb.isSame(bd)) {
                                             p.getAttribute(Attribute.BLOCK_BREAK_SPEED).setBaseValue(0);
-                                            BlockHandler.playerTryingToBreak(p, bd, rb);
+                                            BlockHandler.playerTryingToBreak(p, e.getPlayer().getInventory().getItemInMainHand(), bd, rb);
                                             return;
                                         }
                                     }
