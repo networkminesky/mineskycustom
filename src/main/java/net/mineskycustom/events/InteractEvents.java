@@ -376,7 +376,7 @@ public class InteractEvents implements Listener {
                 if(cb.isSame(b))
                     spigotItem = cb.getItem().toSpigotItem();
             }
-        } else {
+        } else if(b.getType() == Material.TRIPWIRE) {
             // Tripwire
             for(CustomPlant cp : MineSkyCustom.REGISTERED_PLANTS) {
                 if(cp.isSame(b))
