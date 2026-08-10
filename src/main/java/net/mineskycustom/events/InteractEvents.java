@@ -165,11 +165,10 @@ public class InteractEvents implements Listener {
 
         if(b.getType() == Material.NOTE_BLOCK
                 && p.getGameMode() == GameMode.CREATIVE) {
-            for(CustomBlock cb : MineSkyCustom.REGISTERED_BLOCKS) {
-                if(cb.isSame(b)) {
-                    BlockHandler.breakOrientedValues(cb, b, b.getLocation());
-                    return;
-                }
+            final CustomBlock customBlock = BlockHandler.getCustomBlock((NoteBlock) b.getBlockData());
+            if(customBlock != null) {
+                BlockHandler.breakOrientedValues(customBlock, b, b.getLocation());
+                return;
             }
         }
 
@@ -373,9 +372,9 @@ public class InteractEvents implements Listener {
         ItemStack spigotItem = null;
 
         if(b.getType() == Material.NOTE_BLOCK) {
-            for(CustomBlock cb : MineSkyCustom.REGISTERED_BLOCKS) {
-                if(cb.isSame(b))
-                    spigotItem = cb.getItem().toSpigotItem();
+            final CustomBlock customBlock = BlockHandler.getCustomBlock((NoteBlock) b.getBlockData());
+            if(customBlock != null) {
+                spigotItem = customBlock.getItem().toSpigotItem();
             }
         } else if(b.getType() == Material.TRIPWIRE) {
             // Tripwire
@@ -658,13 +657,7 @@ public class InteractEvents implements Listener {
         if (action == Action.RIGHT_CLICK_BLOCK) {
             // Action handler
             if(clickedBlock.getType() == Material.NOTE_BLOCK) {
-                CustomBlock customBlock = null;
-                for (CustomBlock cb : MineSkyCustom.REGISTERED_BLOCKS) {
-                    if (cb.isSame(clickedBlock)) {
-                        customBlock = cb;
-                        break;
-                    }
-                }
+                final CustomBlock customBlock = BlockHandler.getCustomBlock((NoteBlock) clickedBlock.getBlockData());
 
                 if (customBlock != null && !customBlock.getProperties().getAction().isEmpty()) {
                     if(item == null || (!p.isSneaking())) {
@@ -835,7 +828,7 @@ public class InteractEvents implements Listener {
                             if(bd.isEmpty() || !p.isOnline() || p.getGameMode() != GameMode.SURVIVAL)
                                 return;
                             EnumWrappers.PlayerDigType type = e.getPacket().getPlayerDigTypes().read(0);
-                            BlockPos bp = new BlockPos(bd.getX(), bd.getY(), bd.getZ());
+                            //BlockPos bp = new BlockPos(bd.getX(), bd.getY(), bd.getZ());
 
                             switch (type) {
                                 case STOP_DESTROY_BLOCK:
@@ -860,26 +853,14 @@ public class InteractEvents implements Listener {
                                         return;
                                     }
 
-                                    for (CustomBlock rb : MineSkyCustom.REGISTERED_BLOCKS) {
-                                        // Bukkit.broadcastMessage("lol: "+rb.getId() + " | "+rb.getNote() + " | "+rb.getInstrument()+  " | "+rb.getConfig().getString("block.instrument"));
-                                        if (rb.isSame(bd)) {
-                                            p.getAttribute(Attribute.BLOCK_BREAK_SPEED).setBaseValue(0);
-                                            BlockHandler.playerTryingToBreak(p, e.getPlayer().getInventory().getItemInMainHand(), bd, rb);
-                                            return;
-                                        }
+                                    NoteBlock noteBlock = (NoteBlock)bd.getBlockData();
+                                    CustomBlock customBlock = BlockHandler.getCustomBlock(noteBlock);
+
+                                    if(customBlock != null) {
+                                        p.getAttribute(Attribute.BLOCK_BREAK_SPEED).setBaseValue(0);
+                                        BlockHandler.playerTryingToBreak(p, e.getPlayer().getInventory().getItemInMainHand(), bd, customBlock);
+                                        return;
                                     }
-
-                                    /*
-                                    Bukkit.getGlobalRegionScheduler().run(MineSkyCustom.getInstance(), (eventTask) -> {
-                                        BlockBreakEvent ev = new BlockBreakEvent(bd, p);
-                                        Bukkit.getPluginManager().callEvent(ev);
-
-                                        if(!ev.isCancelled()) {
-                                            Bukkit.getRegionScheduler().run(MineSkyCustom.getInstance(), bdL, (locationTask) -> {
-                                                bd.setType(Material.AIR);
-                                            });
-                                        }
-                                    });*/
 
                                     break;
                                 }

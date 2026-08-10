@@ -132,14 +132,4 @@ public class CustomBlock {
     public YamlConfiguration getConfig() {
         return this.config;
     }
-
-    public boolean isSame(Block t) {
-        if(t.getType() != Material.NOTE_BLOCK)
-            return false;
-
-        NoteBlock nb = (NoteBlock) t.getBlockData();
-        String nbins = InstrumentConverter.fromSpigot(nb.getInstrument());
-
-        return this.getInstrument().equalsIgnoreCase(nbins) && this.getNote()==(int)nb.getNote().getId();
-    }
 }

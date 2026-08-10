@@ -5,26 +5,18 @@ import org.bukkit.Instrument;
 public class InstrumentConverter {
 
     public static String fromSpigot(Instrument ins) {
-        switch(ins) {
-            case PIANO: {
-                return "HARP";
-            }
-            case BASS_DRUM: {
-                return "BASEDRUM";
-            }
-            default:{ return ins+""; }
-        }
+        return switch(ins) {
+            case PIANO -> "HARP";
+            case BASS_DRUM -> "BASEDRUM";
+            default -> ins.name();
+        };
     }
 
     public static Instrument fromMinecraft(String ins) {
-        switch(ins) {
-            case "HARP": {
-                return Instrument.PIANO;
-            }
-            case "BASEDRUM": {
-                return Instrument.BASS_DRUM;
-            }
-            default:{ return Instrument.valueOf(ins.toUpperCase()); }
-        }
+        return switch (ins.toLowerCase()) {
+            case "harp" -> Instrument.PIANO;
+            case "basedrum" -> Instrument.BASS_DRUM;
+            default -> Instrument.valueOf(ins.toUpperCase());
+        };
     }
 }
