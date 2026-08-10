@@ -41,6 +41,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -503,25 +504,69 @@ public class InteractEvents implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onBreak(EntityExplodeEvent e) {
+        if(!e.getExplosionResult().name().contains("DESTROY"))
+            return;
+
+        if(e.isCancelled())
+            return;
+
+        e.blockList().removeIf((b) -> {
+            boolean is = b.getType() == Material.NOTE_BLOCK || b.getType() == Material.TRIPWIRE;
+            if(b.getType() == Material.NOTE_BLOCK) {
+                CustomBlock custom = BlockHandler.getCustomBlock(b);
+                if(custom == null) return false;
+
+                b.setType(Material.AIR, true);
+                BlockHandler.breakCustomBlock(null, null, b, custom, true, true);
+            }
+            if(b.getType() == Material.TRIPWIRE) {
+                CustomPlant custom = BlockHandler.getCustomPlant(b);
+                if(custom == null) return false;
+
+                b.setType(Material.AIR, true);
+                BlockHandler.breakCustomPlant(null, b, custom);
+            }
+            return is;
+        });
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPiston(BlockPistonExtendEvent e) {
+        if(e.isCancelled())
+            return;
+
         for(Block block : e.getBlocks()) {
-            if(block.getType() == Material.NOTE_BLOCK
-            || block.getType() == Material.TRIPWIRE) {
-                e.setCancelled(true);
-                return;
+            if(block.getType() == Material.TRIPWIRE) {
+                CustomPlant plant = BlockHandler.getCustomPlant(block);
+                if(plant != null) {
+                    BlockHandler.breakCustomPlant(null, block, plant);
+                }
+            }
+
+            if(block.getType() == Material.NOTE_BLOCK) {
+                CustomBlock custom = BlockHandler.getCustomBlock(block);
+                if(custom != null && custom.getOrientedValues() != null) {
+                    e.setCancelled(true);
+                    return;
+                }
             }
         }
     }
-    @EventHandler
+
+    /*@EventHandler
     public void onPiston(BlockPistonRetractEvent e) {
+        if(e.isCancelled())
+            return;
+
         for(Block block : e.getBlocks()) {
             if(block.getType() == Material.NOTE_BLOCK) {
                 e.setCancelled(true);
                 return;
             }
         }
-    }
+    }*/
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInteract(PlayerInteractEvent e) {

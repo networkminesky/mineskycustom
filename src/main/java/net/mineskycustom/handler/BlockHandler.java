@@ -230,7 +230,7 @@ public class BlockHandler {
         });
     }
 
-    public static void breakCustomBlock(Player p, @Nullable ItemStack item, Block bd, CustomBlock cb, boolean particles, boolean shouldDrop) {
+    public static void breakCustomBlock(@Nullable Player p, @Nullable ItemStack item, Block bd, CustomBlock cb, boolean particles, boolean shouldDrop) {
         if(cb == null)
             return;
 
@@ -244,19 +244,22 @@ public class BlockHandler {
             }
 
             if(alt != null) {
-                p.sendMessage(Component.text("Um erro ocorreu ao quebrar esse bloco.").color(NamedTextColor.RED));
+                if(p != null)
+                    p.sendMessage(Component.text("Um erro ocorreu ao quebrar esse bloco.").color(NamedTextColor.RED));
                 return;
             }
         }
 
-        BlockBreakEvent ev = new BlockBreakEvent(bd, p);
-        ev.setDropItems(false);
-        Bukkit.getPluginManager().callEvent(ev);
-        if(ev.isCancelled()) {
-            return;
+        if(p != null) {
+            BlockBreakEvent ev = new BlockBreakEvent(bd, p);
+            ev.setDropItems(false);
+            Bukkit.getPluginManager().callEvent(ev);
+            if (ev.isCancelled()) {
+                return;
+            }
+            ev.setDropItems(false);
         }
 
-        ev.setDropItems(false);
         Location l = bd.getLocation().add(0.5,0.5,0.5);
 
         BlockPos bp = new BlockPos(bd.getX(), bd.getY(), bd.getZ());
@@ -521,6 +524,14 @@ public class BlockHandler {
                 n++;
             }
         }.runTaskTimer(MineSkyCustom.getInstance(), 0, 3);
+    }
+
+    public static @Nullable CustomPlant getCustomPlant(Block block) {
+        for(CustomPlant cb : MineSkyCustom.REGISTERED_PLANTS) {
+            if(cb.isSame(block))
+                return cb;
+        }
+        return null;
     }
 
     public static @Nullable CustomBlock getCustomBlock(Block block) {
