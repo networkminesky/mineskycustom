@@ -543,7 +543,7 @@ public class BlockHandler {
     public static @Nullable CustomBlock getCustomBlock(NoteBlock noteBlock) {
         for(CustomBlock cb : MineSkyCustom.REGISTERED_BLOCKS) {
             if(noteBlock.getNote().getId() == cb.getNote() && noteBlock.getInstrument() == InstrumentConverter.fromMinecraft(cb.getInstrument()))
-                return cb;
+                return cb; 
         }
         return null;
     }

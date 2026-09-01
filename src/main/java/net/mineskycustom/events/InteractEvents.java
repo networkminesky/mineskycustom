@@ -328,7 +328,7 @@ public class InteractEvents implements Listener {
                 damaged.getWorld().playSound(damaged.getLocation(), Sound.ITEM_SHIELD_BLOCK, 1, 2);
                 damaged.getWorld().playSound(damaged.getLocation(), Sound.ENTITY_IRON_GOLEM_REPAIR, 1, 0.8f);
 
-                damaged.getWorld().spawnParticle(Particle.FLASH, damaged.getLocation().add(0, 1, 0), 1);
+                damaged.getWorld().spawnParticle(Particle.END_ROD, damaged.getLocation().add(0, 1, 0), 10);
 
                 damaged.setCooldown(Material.SHIELD, 20);
 
