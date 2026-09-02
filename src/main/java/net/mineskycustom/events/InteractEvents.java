@@ -275,96 +275,6 @@ public class InteractEvents implements Listener {
         }
     }
 
-    public static boolean parryAllowed(Player p) {
-        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-
-        LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(p);
-        RegionQuery query = container.createQuery();
-        ApplicableRegionSet set = query.getApplicableRegions(BukkitAdapter.adapt(p.getLocation()));
-
-        return set.testState(localPlayer, MineSkyCustom.PARRY_FLAG);
-
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onDamage(EntityDamageByEntityEvent e) {
-
-        Entity damager = e.getDamager();
-
-        if(e.isCancelled())
-            return;
-
-        // parry
-        if(e.getEntity() instanceof Player damaged) {
-            if(damaged.isBlocking() && MineSkyCustom.blockingTicks.getOrDefault(damaged, 999) <= 3
-            && damaged.getLocation().distance(damager.getLocation()) <= 4.5
-            && damaged.getCooldown(Material.SHIELD) == 0
-            && parryAllowed(damaged)) {
-
-                damaged.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 30, 5, false, false, false));
-
-                if(damaged.getInventory().getItemInMainHand().getType() == Material.SHIELD)
-                    damaged.swingMainHand();
-                else
-                    damaged.swingOffHand();
-
-                Vector direction = damaged.getLocation().toVector().subtract(damager.getLocation().toVector()).normalize();
-
-                Location l = damaged.getLocation();
-                l.setPitch(0);
-
-                direction.multiply(-0.9);
-
-                direction.setY(0.4);
-
-                damaged.setVelocity(l.getDirection().multiply(-0.5).setY(0.05));
-                damager.setVelocity(direction);
-
-                if(damager instanceof Damageable da) {
-                    da.damage(e.getDamage()/2);
-                }
-
-                //AdvancementManager.awardAdvancement(damaged, new NamespacedKey("minesky", "parry"), "0");
-
-                damaged.getWorld().playSound(damaged.getLocation(), Sound.ITEM_SHIELD_BLOCK, 1, 2);
-                damaged.getWorld().playSound(damaged.getLocation(), Sound.ENTITY_IRON_GOLEM_REPAIR, 1, 0.8f);
-
-                damaged.getWorld().spawnParticle(Particle.END_ROD, damaged.getLocation().add(0, 1, 0), 10);
-
-                damaged.setCooldown(Material.SHIELD, 20);
-
-                e.setCancelled(true);
-            }
-        }
-
-        if(!(e.getDamager() instanceof Player p))
-            return;
-
-        if(e.isCancelled())
-            return;
-
-        /*
-        if(!p.getInventory().getItemInMainHand().getType().isAir()) {
-            final ItemStack it = p.getInventory().getItemInMainHand();
-
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    final net.minecraft.world.item.ItemStack nmsItem = CraftItemStack.asNMSCopy(it);
-                    final CompoundTag tag = nmsItem.getOrCreateTag();
-                    if(tag == null) return;
-                    if (tag.contains("mineskyvfx")) {
-                        if (tag.getString("mineskyvfx_method").equals("damage")
-                        || tag.getString("mineskyvfx_method").equals("damage_and_interaction")) {
-                            String vfx = tag.getString("mineskyvfx");
-                            VFXHandler.playVFXGroup(VFXHandler.getVFXGroupByID(vfx), p);
-                        }
-                    }
-                }
-            }.runTaskAsynchronously(MineSkyCustom.getInstance());
-        }*/
-    }
-
     @EventHandler
     public void onPick(PlayerPickBlockEvent e) {
         final Player p = e.getPlayer();
@@ -518,6 +428,10 @@ public class InteractEvents implements Listener {
                 CustomBlock custom = BlockHandler.getCustomBlock(b);
                 if(custom == null) return false;
 
+                if(custom.getProperties().getHardness() > 120) {
+                    return false;
+                }
+
                 b.setType(Material.AIR, true);
                 BlockHandler.breakCustomBlock(null, null, b, custom, true, true);
             }
@@ -577,15 +491,10 @@ public class InteractEvents implements Listener {
             return;
         }
 
-        player.getServer().getScheduler().runTask(MineSkyCustom.getInstance(), () -> {
-            if (player.isGliding()) {
-                Vector currentVelocity = player.getVelocity();
-                Vector nerfedVelocity = currentVelocity.multiply(0.5);
-
-                player.setCooldown(Material.FIREWORK_ROCKET, 60);
-                player.setVelocity(nerfedVelocity);
-            }
-        });
+        if (player.isGliding()) {
+            player.setVelocity(new Vector(0,0,0));
+            player.setCooldown(Material.FIREWORK_ROCKET, 90);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

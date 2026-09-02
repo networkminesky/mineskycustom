@@ -291,24 +291,6 @@ public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
         //ThrowableItem stormlander2 = ThrowableItemRegistry.createItem("Stormlander2", player);
     }
 
-    public static StateFlag PARRY_FLAG;
-
-    @Override
-    public void onLoad() {
-        FlagRegistry registry = WorldGuard.getInstance().getFlagRegistry();
-        try {
-            StateFlag flag = new StateFlag("parry", true);
-            registry.register(flag);
-            PARRY_FLAG = flag; // only set our field if there was no error
-        } catch (FlagConflictException e) {
-            Flag<?> existing = registry.get("parry");
-            if (existing instanceof StateFlag) {
-                PARRY_FLAG = (StateFlag) existing;
-            } else {
-            }
-        }
-    }
-
     @Override
     public void onDisable() {
         this.getServer().getMessenger().unregisterOutgoingPluginChannel(this);
