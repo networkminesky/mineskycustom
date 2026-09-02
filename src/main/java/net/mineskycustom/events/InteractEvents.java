@@ -572,11 +572,17 @@ public class InteractEvents implements Listener {
     public void onElytraBoost(PlayerElytraBoostEvent event) {
         Player player = event.getPlayer();
 
+        if(player.getCooldown(Material.FIREWORK_ROCKET) > 0) {
+            event.setCancelled(true);
+            return;
+        }
+
         player.getServer().getScheduler().runTask(MineSkyCustom.getInstance(), () -> {
             if (player.isGliding()) {
                 Vector currentVelocity = player.getVelocity();
                 Vector nerfedVelocity = currentVelocity.multiply(0.5);
 
+                player.setCooldown(Material.FIREWORK_ROCKET, 60);
                 player.setVelocity(nerfedVelocity);
             }
         });
