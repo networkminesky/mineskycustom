@@ -371,9 +371,9 @@ public class BlockHandler {
 
         breakingWood.add(uuid);
 
-        p.getScheduler().runAtFixedRate(MineSkyCustom.getInstance(), new java.util.function.Consumer<>() {
-            final Location l = p.getLocation();
+        Bukkit.getRegionScheduler().runAtFixedRate(MineSkyCustom.getInstance(), origin.getLocation(), new java.util.function.Consumer<>() {
             int n = 0;
+
             @Override
             public void accept(ScheduledTask task) {
                 if(origin.getType().isAir() || n >= 100 || !p.isOnline() || p.isDead() || !breakingWood.contains(uuid)) {
@@ -393,7 +393,7 @@ public class BlockHandler {
 
                 n++;
             }
-        }, () -> {}, 1, 4);
+        }, 1, 4);
     }
 
     public static void playerTryingToBreak(Player p, ItemStack item, Block origin, CustomBlock cb) {
