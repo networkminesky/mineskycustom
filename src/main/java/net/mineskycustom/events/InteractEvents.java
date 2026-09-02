@@ -6,6 +6,7 @@ import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.wrappers.BlockPosition;
 import com.comphenix.protocol.wrappers.EnumWrappers;
+import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.WorldGuard;
@@ -567,6 +568,20 @@ public class InteractEvents implements Listener {
         }
     }*/
 
+    @EventHandler
+    public void onElytraBoost(PlayerElytraBoostEvent event) {
+        Player player = event.getPlayer();
+
+        player.getServer().getScheduler().runTask(MineSkyCustom.getInstance(), () -> {
+            if (player.isGliding()) {
+                Vector currentVelocity = player.getVelocity();
+                Vector nerfedVelocity = currentVelocity.multiply(0.5);
+
+                player.setVelocity(nerfedVelocity);
+            }
+        });
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInteract(PlayerInteractEvent e) {
         // VFX GROUP PLAYER
@@ -628,14 +643,6 @@ public class InteractEvents implements Listener {
         final @Nullable ItemStack item = e.getItem();
         final Action action = e.getAction();
         final Player p = e.getPlayer();
-
-        if(item != null
-        && item.getType() == Material.FIREWORK_ROCKET
-        && action == Action.RIGHT_CLICK_AIR) {
-            if(!p.hasPermission("minesky.elytra")) {
-                e.setCancelled(true);
-            }
-        }
 
         if (!e.hasBlock()) return;
 
