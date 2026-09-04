@@ -429,7 +429,7 @@ public class InteractEvents implements Listener {
                 if(custom == null) return false;
 
                 if(custom.getProperties().getHardness() > 120) {
-                    return false;
+                    return true;
                 }
 
                 b.setType(Material.AIR, true);
