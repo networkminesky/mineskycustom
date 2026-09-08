@@ -408,22 +408,30 @@ public class BlockHandler {
 
         final Location originLocation = origin.getLocation();
         ScheduledTask b = Bukkit.getRegionScheduler().runAtFixedRate(MineSkyCustom.getInstance(), originLocation, (task) -> {
-            float f = ((float) n.get() / (float) result.getHardness()) * (float) 1;
+            if (!p.isOnline() || !p.getWorld().equals(originLocation.getWorld())) {
+                task.cancel();
+                return;
+            }
 
+            if (p.getLocation().distanceSquared(originLocation) > 36.0) { // 6 * 6 = 36
+                cancelBreaking(p, origin);
+                task.cancel();
+                return;
+            }
+
+            float f = ((float) n.get() / (float) result.getHardness()) * (float) 1;
             int stage = (int) (f * 10.0f);
 
-            // Bukkit.broadcastMessage(stage+" | "+f);
-
-            if(soundN.get() == 4)
+            if (soundN.get() == 4)
                 soundN.set(0);
 
-            if(soundN.get() == 0) {
-                p.playSound(originLocation, cb.getProperties().getSound()+".hit", 0.4f, 0);
+            if (soundN.get() == 0) {
+                p.playSound(originLocation, cb.getProperties().getSound() + ".hit", 0.4f, 0);
             }
 
             final int breakT = breaktime.get();
-            if(stage != breakT) {
-                if(breakT <= 9) {
+            if (stage != breakT) {
+                if (breakT <= 9) {
                     ClientboundBlockDestructionPacket packet = new ClientboundBlockDestructionPacket(0, bp, breakT);
                     for (Player bs : Bukkit.getOnlinePlayers()) {
                         ((CraftPlayer) bs).getHandle().connection.send(packet);
@@ -432,14 +440,14 @@ public class BlockHandler {
                 breaktime.incrementAndGet();
             }
 
-            if(breakT == 12 || result.getHardness() <= 0/* || n == hardness*/ ) {
-                breakCustomBlock(p, item,  origin, cb, true, result.isUsingRightTool());
+            if (breakT == 12 || result.getHardness() <= 0) {
+                breakCustomBlock(p, item, origin, cb, true, result.isUsingRightTool());
                 task.cancel();
                 return;
             }
 
             RayTraceResult r = p.rayTraceBlocks(5, FluidCollisionMode.NEVER);
-            if(r != null && r.getHitBlock() != null && !r.getHitBlock().getLocation().equals(origin.getLocation())) {
+            if (r != null && r.getHitBlock() != null && !r.getHitBlock().getLocation().equals(origin.getLocation())) {
                 cancelBreaking(p, origin);
                 task.cancel();
                 return;
