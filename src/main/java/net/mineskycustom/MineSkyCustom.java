@@ -30,7 +30,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.geysermc.geyser.api.event.EventRegistrar;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,7 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
-public class MineSkyCustom extends JavaPlugin implements EventRegistrar {
+public class MineSkyCustom extends JavaPlugin {
 
     public static ProtocolManager protocolManager;
 
