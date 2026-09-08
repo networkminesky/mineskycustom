@@ -12,7 +12,6 @@ softdepend:
   - "mainframe"
   - "WorldEdit"
   - "WorldGuard"
-  - "Geyser-Spigot"
 
 commands:
   cb:
