@@ -22,6 +22,8 @@ repositories {
 dependencies {
     paperweight.foliaDevBundle('26.1.2.build.+')
 
+    compileOnly 'com.github.networkminesky:MineSkyGameplay:1.0.0-BETA'
+
     compileOnly 'net.dmulloy2:ProtocolLib:5.4.0'
 
     compileOnly 'com.github.networkminesky:mineskyitems:dev~folia-SNAPSHOT'
