@@ -104,6 +104,16 @@ public class BlockHandler {
         }
     }
 
+    public static void modifyTripwire(Tripwire wire, CustomPlant cb) {
+        wire.setFace(BlockFace.NORTH, cb.isNorth());
+        wire.setFace(BlockFace.SOUTH, cb.isSouth());
+        wire.setFace(BlockFace.EAST, cb.isEast());
+        wire.setFace(BlockFace.WEST, cb.isWest());
+        wire.setAttached(cb.isAttached());
+        wire.setDisarmed(cb.isDisarmed());
+        wire.setPowered(cb.isPowered());
+    }
+
     public static void placeCustomPlant(Player placer, CustomPlant cb, Block origin, Block placehere, ItemStack it, EquipmentSlot eq) {
         BlockPlaceEvent ev = new BlockPlaceEvent(placehere, origin.getState(), origin, it, placer, false, eq);
         Bukkit.getPluginManager().callEvent(ev);
@@ -114,13 +124,7 @@ public class BlockHandler {
             return;*/
 
         Tripwire wire = (Tripwire)Material.TRIPWIRE.createBlockData();
-        wire.setFace(BlockFace.NORTH, cb.isNorth());
-        wire.setFace(BlockFace.SOUTH, cb.isSouth());
-        wire.setFace(BlockFace.EAST, cb.isEast());
-        wire.setFace(BlockFace.WEST, cb.isWest());
-        wire.setAttached(cb.isAttached());
-        wire.setDisarmed(cb.isDisarmed());
-        wire.setPowered(cb.isPowered());
+        modifyTripwire(wire, cb);
 
         placehere.setBlockData(wire, false);
         placehere.getWorld().playSound(placehere.getLocation(), cb.getPlantProperties().getSound()+".place", 1,

@@ -10,6 +10,7 @@ import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.flags.registry.FlagConflictException;
 import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 import net.mineskycustom.commands.AdminCommands;
+import net.mineskycustom.events.DispenserEvents;
 import net.mineskycustom.gui.CustomGUI;
 import net.mineskycustom.custom.blocks.CustomBlock;
 import net.mineskycustom.custom.plants.CustomPlant;
@@ -265,6 +266,8 @@ public class MineSkyCustom extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new InteractEvents(), this);
         getServer().getPluginManager().registerEvents(new CustomGUI(), this);
         getServer().getPluginManager().registerEvents(new InventoryEvents(), this);
+
+        getServer().getPluginManager().registerEvents(new DispenserEvents(), this);
 
         l.info("Registrando packets");
         this.getServer().getMessenger().registerOutgoingPluginChannel(this, "minesky:main");
