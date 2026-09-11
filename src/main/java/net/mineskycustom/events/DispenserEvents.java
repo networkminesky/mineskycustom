@@ -45,7 +45,6 @@ public class DispenserEvents implements Listener {
         if (b.getType() != Material.DISPENSER)
             return;
 
-        // 1. Trava anti-loop de redstone no mesmo tick
         if (!processing.add(b.getLocation())) {
             e.setCancelled(true);
             return;
@@ -55,7 +54,7 @@ public class DispenserEvents implements Listener {
             CustomObject object = BlockHandler.getCustomObjectFromItemStack(stack);
             if (!stack.getType().isBlock()) {
                 if (object == null)
-                    return; // Deixa flechas, poções e itens vanilla agirem normalmente
+                    return;
                 else if (object.isCustomBlock() && (object.getObject() instanceof CustomBlock cb && cb.getOrientedValues() != null))
                     return;
             }
@@ -68,7 +67,6 @@ public class DispenserEvents implements Listener {
                 return;
             }
 
-            // Checagem de claims
             Position originalPos = BukkitHuskClaimsAPI.getInstance().getPosition(b.getLocation());
             Position relativePos = BukkitHuskClaimsAPI.getInstance().getPosition(relative.getLocation());
             Claim originalClaim = BukkitHuskClaimsAPI.getInstance().getClaimAt(originalPos).orElse(null);
@@ -79,10 +77,8 @@ public class DispenserEvents implements Listener {
                 return;
             }
 
-            // Cancela o drop do item vanilla do dispenser
             e.setCancelled(true);
 
-            // 2. Desconta o item com segurança
             BlockState liveState = b.getState(false);
             if (liveState instanceof org.bukkit.block.Dispenser disp) {
                 ItemStack inSlot = disp.getInventory().getItem(e.getSlot());
@@ -104,12 +100,10 @@ public class DispenserEvents implements Listener {
                 return;
             }
 
-            // 3. Colocação do bloco com GRAVIDADE REAL sem dupes
             Material base = (object == null) ? stack.getType() :
                     (object.isCustomBlock() ? Material.NOTE_BLOCK : Material.TRIPWIRE);
 
             if (object != null) {
-                // Blocos ou plantas customizadas: SEM FÍSICA
                 relative.setType(base, false);
                 BlockData baseData = base.createBlockData();
 
@@ -128,11 +122,8 @@ public class DispenserEvents implements Listener {
                     relative.getWorld().playSound(relative.getLocation(), cb.getPlantProperties().getSound() + ".place", 1, cb.getPlantProperties().getSoundPitch());
                 }
             } else {
-                // Blocos Vanilla:
                 if (base.hasGravity()) {
                     Block below = relative.getRelative(BlockFace.DOWN);
-
-                    // Se NÃO tiver chão sólido embaixo, ele DEVE CAIR:
                     if (!below.getType().isSolid()) {
                         FallingBlock fb = relative.getWorld().spawnFallingBlock(
                                 relative.getLocation().add(0.5, 0, 0.5),
@@ -140,12 +131,9 @@ public class DispenserEvents implements Listener {
                         );
                         fb.setDropItem(true);
                     } else {
-                        // Se JÁ estiver apoiado no chão firme, coloca como bloco estático seguro
-                        // Isso impede que a entidade gere drop duplo com a pá de Eficiência 5!
                         relative.setType(base, false);
                     }
                 } else {
-                    // Outros blocos vanilla normais (Madeira, Pedra, etc.)
                     relative.setType(base, true);
                 }
 
